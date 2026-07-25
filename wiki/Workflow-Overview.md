@@ -12,8 +12,9 @@ requirements, designing and reviewing a solution, writing tests before any imple
 implementing until they pass, running full quality gates, merging, watching CI/CD, updating docs,
 and writing a report of what happened.
 
-It was extracted from a real, working pipeline (`throughline`, a small PWA project) into a
-reusable template, so any project can adopt the same discipline without re-inventing it. If you're
+It was extracted from a real, working pipeline ([`throughline`](https://github.com/lauz9888/throughline),
+a small PWA project that was developed using this workflow) into a reusable template, so any
+project can adopt the same discipline without re-inventing it. If you're
 looking to *adopt* Waypoint rather than understand how it works internally, see the
 [User Guide](User-Guide) instead — this page is about the mechanics.
 

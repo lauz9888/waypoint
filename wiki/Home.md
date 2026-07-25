@@ -1,6 +1,6 @@
 # Waypoint
 
-A reusable, spec-first, test-first development pipeline for Claude Code.
+AI coding tools are excellent at writing code, but inconsistent at shipping production-ready changes. Waypoint is effectively an orchestration framework that provides a repeatable workflow that turns a feature request into a tested, reviewed, deployed change with minimal human intervention.
 
 - **[Workflow Overview](Workflow-Overview)** — what the pipeline is, why it's shaped this way,
   and how a change moves through it end to end.
@@ -45,3 +45,7 @@ checkpoints and won't skip the test-first discipline), and it doesn't yet fit pr
 GitHub + npm-style-scripts world — non-Node stacks or other VCS/issue-tracker hosts aren't
 supported in this version (see
 [What's fixed, not configurable](Workflow-Overview#whats-fixed-not-configurable)).
+
+### Can a non-developer use Waypoint?
+
+Yes, provided someone has already set up the pipeline. Waypoint still expects human decisions about requirements and manual testing, but the technical implementation is handled by the workflow.
