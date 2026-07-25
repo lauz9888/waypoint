@@ -1,5 +1,5 @@
 **Waypoint**
 
-- [Home](Home.md)
-- [Workflow Overview](Workflow-Overview.md)
-- [User Guide](User-Guide.md)
+- [Home](Home)
+- [Workflow Overview](Workflow-Overview)
+- [User Guide](User-Guide)

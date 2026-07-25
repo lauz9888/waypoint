@@ -2,7 +2,7 @@
 
 A step-by-step walkthrough for bringing the Waypoint pipeline into your own project. If you want
 to understand *why* the pipeline is shaped the way it is first, read the
-[Workflow Overview](Workflow-Overview.md) — this page assumes you just want to get it running.
+[Workflow Overview](Workflow-Overview) — this page assumes you just want to get it running.
 
 ## Prerequisites
 
@@ -155,7 +155,7 @@ to get subtly wrong.
 ## Troubleshooting / FAQ
 
 **"My project isn't Node/npm-based."** Waypoint v1 assumes the npm-style script-name contract
-(`build`, `test:unit`, etc.) — see [Workflow Overview](Workflow-Overview.md#whats-fixed-not-configurable)
+(`build`, `test:unit`, etc.) — see [Workflow Overview](Workflow-Overview#whats-fixed-not-configurable)
 for why that's a fixed assumption right now rather than a setup question.
 
 **"`waypoint-init` detected the wrong package manager / framework."** Just correct it when asked —

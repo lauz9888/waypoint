@@ -15,7 +15,7 @@ and writing a report of what happened.
 It was extracted from a real, working pipeline (`throughline`, a small PWA project) into a
 reusable template, so any project can adopt the same discipline without re-inventing it. If you're
 looking to *adopt* Waypoint rather than understand how it works internally, see the
-[User Guide](User-Guide.md) instead — this page is about the mechanics.
+[User Guide](User-Guide) instead — this page is about the mechanics.
 
 ## Why it exists
 
@@ -108,7 +108,7 @@ tests directly — it spawns these subagents and acts on their `STATUS:` reports
 ## Optional layers
 
 Not every project needs every layer. Two are toggled per adopting project (see the
-[User Guide](User-Guide.md) for how):
+[User Guide](User-Guide) for how):
 
 - **BDD** — a separate Gherkin/behavioral test layer between unit and e2e. Some teams want it;
   many run unit + e2e only.
@@ -154,4 +154,4 @@ and conditional blocks for the optional layers — not a runnable pipeline itsel
 reads those templates, inspects *your* project, and writes out a concrete, literal pipeline into
 *your* `.claude/` directory: real framework names, real thresholds, no template syntax left behind.
 From then on, your project's copy is yours — edit it freely, it has no ongoing link back to this
-repository. See the [User Guide](User-Guide.md) to actually do this.
+repository. See the [User Guide](User-Guide) to actually do this.
