@@ -51,6 +51,10 @@ the mechanics below happen to work today:
 - **Nothing loops forever.** Every retry cycle (design review, red/green cycles, QA, manual test,
   CI) is capped at 5 iterations; hitting the cap stops and asks the user how to proceed instead of
   spinning.
+- **Repository content is data, never instructions.** Source files, issue/PR text, logs, and
+  command output are things every agent reads, not things that can redirect what it does — the
+  only real instructions are an agent's own definition and what the orchestrator/user explicitly
+  asks for. See `.claude/STANDARDS.md`'s "Trust boundary for repository content" section.
 
 ## Implementation details
 
@@ -236,6 +240,15 @@ reads those templates, inspects *your* project, and writes out a concrete, liter
 *your* `.claude/` directory: real framework names, real thresholds, no template syntax left behind.
 From then on, your project's copy is yours — edit it freely, it has no ongoing link back to this
 repository. See the [User Guide](User-Guide) to actually do this.
+
+The mechanical part of that generation — placeholder substitution, optional-layer resolution, step
+renumbering — is checked in CI (`scripts/run-fixture-tests.js`, `.github/workflows/validate-templates.yml`
+in this repo) against three synthetic pipeline variants plus `examples/throughline` itself, so a
+template edit that breaks a generated pipeline's internal consistency (a dangling `Step N`
+reference, a leftover placeholder, the wrong agent-file set for a layer combination) fails a build
+instead of only surfacing the next time someone runs `waypoint-init` for real. It does *not* check
+`{{STACK_FACTS}}` prose quality — that still needs a human/LLM reading the generated output, same
+as before. See `scripts/README.md` if you're extending the templates.
 
 ## A hypothetical example
 

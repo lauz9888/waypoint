@@ -112,15 +112,21 @@ Here's what to expect, in order:
    but you'll see it happen.
 3. **Tests, written red.** Unit (and BDD/e2e, per your enabled layers) tests get written for
    behavior that doesn't exist yet, and confirmed to fail for the right reason.
-4. **Implementation.** Code gets written until exactly those tests pass.
+4. **Implementation.** Code gets written to the approved design and requirements — the red tests
+   are immediate, executable evidence it got there, not the whole definition of "done" — while
+   staying scoped to what the design actually describes.
 5. **Full suites + auto-fixing.** Every test suite runs in full; any failure becomes a GitHub issue
    and gets fixed automatically, looping until green.
 6. **Quality gates.** A QA review checks code quality, security hygiene, accessibility, and
    combined coverage against your threshold. If anything's short, it loops back to add coverage or
    fix gaps — automatically.
 7. **Manual testing.** The app starts locally and **you're given a URL to test yourself** — the
-   second and last point you're asked to act. Report a bug here and it's fixed and re-tested before
-   moving on; or just confirm it looks right.
+   second and last point you're asked to act. If something's wrong, it gets classified before
+   routing — an implementation defect goes to bug-fixing and re-test as you'd expect, but a wrong
+   or missing test, a design gap, or a requirement that turns out to be wrong route differently
+   (the last one reopens requirements approval rather than being force-fit as a "bug"). You may be
+   asked which one it is if it's not obvious from how you describe it. Or just confirm it looks
+   right and move on.
 8. **Merge and ship.** The branch merges via PR, CI/CD run and are watched automatically (CI
    failures are auto-fixed and retried; a CD failure is logged for you, not auto-fixed, and the
    change is recorded as merged-but-not-live rather than shipped). Docs get reconciled against what
