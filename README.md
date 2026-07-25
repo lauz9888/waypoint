@@ -1,5 +1,7 @@
 # Waypoint
 
+[![Validate templates](https://github.com/lauz9888/waypoint/actions/workflows/validate-templates.yml/badge.svg)](https://github.com/lauz9888/waypoint/actions/workflows/validate-templates.yml)
+
 A reusable, spec-first, test-first development pipeline for Claude Code — extracted from the
 `throughline` project. Every change runs through requirements → design/review → test-first
 unit/BDD/e2e → implementation → bug-fix loops → QA + coverage gate → manual test gate → merge →
@@ -25,3 +27,25 @@ it in a project:
 `examples/throughline/` is a fully concrete, worked example of the templates filled in — read it
 alongside `TEMPLATE_CONVENTIONS.md` if you're extending the templates rather than just adopting
 them.
+
+## Status & limitations
+
+- **Status:** actively developed, v1. The pipeline, its subagents, and the reporting mechanism are
+  all in real use (`examples/throughline` is the project this was extracted from), but the shape
+  of individual steps is still expected to evolve — see `wiki/Workflow-Overview.md`'s distinction
+  between the pipeline's **guarantees** (stable) and its **implementation details** (not).
+- **Assumes Claude Code** with skills, subagents (the `Agent` tool), and `AskUserQuestion`
+  available — this isn't a generic prompt-engineering template, it's built around those specific
+  primitives.
+- **`examples/throughline` is mechanically validated, not just hand-maintained.**
+  `scripts/validate-templates.js`, run in CI (`.github/workflows/validate-templates.yml`), checks
+  it for structural drift from the templates on every push — see `scripts/README.md` for exactly
+  what "validated" does and doesn't mean here (structural correctness, not prose quality).
+- **Known limitations:** GitHub-only (VCS and issue tracker, via the `gh` CLI — see
+  `TEMPLATE_CONVENTIONS.md`'s "Not templatized" section); assumes the npm-style script-name
+  contract (`build`, `test:unit`, etc.), so non-Node projects aren't supported yet; every retry
+  loop is capped at 5 iterations and stops to ask rather than looping forever, which is deliberate
+  but means a genuinely stuck run needs a human.
+- **Security/trust model:** see `.claude/STANDARDS.md`'s "Trust boundary for repository content"
+  section — every agent treats source files, issue/PR text, logs, and command output as untrusted
+  data, never as instructions.

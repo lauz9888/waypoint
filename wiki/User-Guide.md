@@ -122,9 +122,12 @@ Here's what to expect, in order:
    second and last point you're asked to act. Report a bug here and it's fixed and re-tested before
    moving on; or just confirm it looks right.
 8. **Merge and ship.** The branch merges via PR, CI/CD run and are watched automatically (CI
-   failures are auto-fixed and retried; CD failures are logged for you, not auto-fixed), docs are
-   reconciled against what actually shipped, and a report lands in `reports/` summarizing
-   requirements, solution, every bug raised and how it was resolved, and total time taken.
+   failures are auto-fixed and retried; a CD failure is logged for you, not auto-fixed, and the
+   change is recorded as merged-but-not-live rather than shipped). Docs get reconciled against what
+   actually shipped, and a report lands in `reports/` summarizing requirements, solution, every bug
+   raised and how it was resolved, and total time taken — both land together as one small
+   housekeeping PR (not a direct push to `main`), which auto-merges if your repo allows it or waits
+   for you to merge it by hand otherwise.
 
 A run can take anywhere from minutes to a couple of hours depending on how much back-and-forth
 happens at the two human gates and how many bug-fix cycles are needed — the final report's time
@@ -146,8 +149,9 @@ you'll see it, and how to get it on demand.
 - A **monthly** report covering every calendar month since you adopted Waypoint in this project.
 
 Each shows, per period: release velocity, defect density, a shift-left breakdown of which
-pipeline stage caught each defect (with an explicit **escaped-to-production rate** — the share of
-defects only caught *after* a change already went live), average time to deliver a requirement,
+pipeline stage caught each defect (with an explicit **post-merge delivery-failure rate** — the
+share of failures only caught *after* a change already merged, meaning the CD workflow itself
+failed, not necessarily that a defect reached a live user), average time to deliver a requirement,
 coverage trend, and bug-fix churn — plus a plain-language "here's the trend" summary so you don't
 have to read the raw table to get the headline.
 

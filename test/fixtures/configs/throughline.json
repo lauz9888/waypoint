@@ -1,0 +1,7 @@
+{
+  "_comment": "Not used to generate anything — examples/throughline is hand-maintained, real prose. This just tells validate-templates.js which layers throughline has on, so it checks the right agent-file set and script/label mentions.",
+  "layers": {
+    "BDD": true,
+    "STATIC_SPA_DEPLOY": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "values": {
+    "PROJECT_NAME": "widgetapp",
+    "APP_STACK_SUMMARY": "a Node/Express API service, deployed at the root path",
+    "PKG_MANAGER": "npm",
+    "PKG_EXEC": "npx",
+    "RUNTIME_VERSION": "Node 20",
+    "COVERAGE_THRESHOLD": "90",
+    "WCAG_TAGS": "['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']",
+    "RELEASE_REPORT_CADENCE": "10"
+  },
+  "layers": {
+    "BDD": true,
+    "STATIC_SPA_DEPLOY": false
+  },
+  "stackFactsStubs": {
+    "unit-test": "[[FIXTURE STUB: unit-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "bdd-test": "[[FIXTURE STUB: bdd-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "e2e-test": "[[FIXTURE STUB: e2e-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "test-frameworks-summary": "stub test frameworks (fixture only)"
+  },
+  "defaultStackFactsStub": "[[FIXTURE STUB — not real generator output, see scripts/README.md]]"
+}

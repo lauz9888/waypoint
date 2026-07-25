@@ -70,10 +70,10 @@ below. The 22 steps fall into eight phases:
 | **2. Design** | 3 | A solution design is proposed and reviewed against the requirements until it holds up — no human gate; the reviewer is the check. |
 | **3. Branch** | 4 | A feature branch is created. |
 | **4. Test-first (red)** | 5–7 | Unit, BDD, and e2e tests are written for behavior that doesn't exist yet, and each is confirmed to fail *for the right reason*. |
-| **5. Implementation (green)** | 8 | The implementer makes exactly those tests pass — no more, no less. |
+| **5. Implementation (green)** | 8 | The implementer builds to the approved design and requirements — the red tests are immediate, executable evidence it got there, not the complete definition of done — while staying scoped to what the design describes. |
 | **6. Full suites + bug loops** | 9–11 | Each full test suite runs; any failure is filed as a GitHub issue and fixed in a loop until green. |
 | **7. Quality gates** | 12–14 | QA review + combined coverage gate, an optional pre-merge base-path smoke check, then manual testing — the second human gate. |
-| **8. Ship** | 15–22 | Merge, CI/CD (watched, with an autonomous CI bug-fix loop; CD failures are logged, not auto-fixed), docs reconciliation, a post-change report, and cleanup. |
+| **8. Ship** | 15–22 | Merge, CI/CD (watched, with an autonomous CI bug-fix loop; CD failures are logged, not auto-fixed, and the release is recorded as merged-but-not-live rather than shipped), then docs reconciliation, the post-change report, and the release counter/metrics land together as one reviewed housekeeping PR (not direct pushes to `main`) before cleanup. |
 
 #### The flow
 
@@ -92,8 +92,8 @@ flowchart TD
     K --> L["CI / CD"]
     L --> M["CI bug-fix loop\n(autonomous)"]
     M --> N["CD failure logging\n(not auto-fixed)"]
-    N --> O["Docs reconciliation"]
-    O --> P["Post-change report"]
+    N --> O["Docs + report + release counter\non one housekeeping PR"]
+    O --> P["Auto-merge housekeeping PR\n(watch for a redeploy it triggers)"]
     P --> Q(["Cleanup"])
 
     style B fill:#f9d77e,stroke:#333
@@ -190,15 +190,20 @@ Both cover the same six metrics, computed per bucket:
 |---|---|
 | **Release velocity** | How many changes shipped to live in that period — is throughput rising, falling, or flat? |
 | **Defect density** | Bugs raised per release in that period — is each release getting cleaner or messier over time? |
-| **Shift-left histogram** | Which pipeline stage caught each defect, in order from `requirement` through `cd` — with an explicit **escaped-to-production rate**, the share labeled `cd` (defects only caught *after* a change already went live). This is the headline number: it answers "are we catching problems earlier or later?" It's also why CD failures get their own `cd` label distinct from pre-merge `ci` failures — Step 18 catches things before merge, Step 19 only catches things after the change is already live, and conflating the two would hide the escape rate entirely. |
+| **Shift-left histogram** | Which pipeline stage caught each defect, in order from `requirement` through `cd` — with an explicit **post-merge delivery-failure rate**, the share labeled `cd`. This is the headline number: it answers "are we catching problems earlier or later?" It's also why CD failures get their own `cd` label distinct from pre-merge `ci` failures — Step 18 catches things before merge, Step 19 only catches things after the change already merged. Note what `cd` does *not* claim: it means the CD workflow itself failed after merge (build/package/auth/upload/deploy), not that a confirmed defect reached a live user — a `cd` failure often means the previous version stayed live and nothing new shipped. `security`/`accessibility` labels are a separate, informational classification layered on top of a stage label, never counted as their own row here — an issue is counted once, under its stage. |
 | **Average requirement delivery time** | Mean hours from requirements kickoff to CD-live, across that period's releases. |
 | **Coverage trend** | Mean combined test coverage % across that period's releases. |
 | **Bug-fix churn** | Mean bugs raised per release — the same numerator as defect density, but tracked as its own row so a churn spike is visible even in a period where release count also moved. |
 
 Each report also closes with a plain-language comparison of the most recent bucket against the
-oldest one in that report (velocity, escaped-defect rate, delivery time — up, down, or flat), so
-you don't have to eyeball 8 rows of numbers to get the headline. If fewer than two releases exist
-yet, both reports say so plainly instead of drawing a trend line through one data point.
+oldest one in that report (velocity, post-merge delivery-failure rate, delivery time — up, down,
+or flat), so you don't have to eyeball 8 rows of numbers to get the headline. Every release also
+carries an outcome, `deployed` or `merged-deployment-failed` (the change merged but Step 19's CD
+watch failed, so it never actually went live) — velocity and delivery-time only count `deployed`
+releases, while defect density, the shift-left histogram, and coverage trend count every merged
+release regardless of outcome, since a defect or a coverage number doesn't stop being real just
+because the deploy itself failed. If fewer than two releases exist yet, both reports say so
+plainly instead of drawing a trend line through one data point.
 
 #### When it's triggered automatically
 
@@ -216,8 +221,8 @@ fast-moving project, `20` for a slower one).
 #### How to trigger it manually
 
 Run `/quality-report` — no arguments needed. It spawns `quality-reporter` against whatever release
-history already exists, writes both reports, commits them directly to `main`, and tells you the
-two file paths plus a one-line headline summary (velocity trend, escaped-to-production rate).
+history already exists, writes both reports, commits them, and tells you the
+two file paths plus a one-line headline summary (velocity trend, post-merge delivery-failure rate).
 There's no loop or retry cap here — it's a deterministic read over existing data, so a stale or
 unwanted run just gets superseded the next time this runs, automatically or by hand. Use it any
 time you want a current read without waiting for the cadence to land on a milestone: before a
@@ -274,11 +279,14 @@ visual indicator in the list`.
    path; `qa-reviewer` adds the missing test itself rather than escalating.
 8. **Manual testing.** The app starts locally and the user is given a URL. They mark a task
    high-priority, see the badge, and confirm it looks right — the second and last human gate.
-9. **Ship.** The branch merges via PR, CI/CD run and pass, `docs-updater` checks whether `taskly`'s
-   README mentions the task model and updates it, and `report-generator` writes
-   `reports/2026-07-25-high-priority-tasks.md` summarizing the requirement, the design, every test
-   file touched, the one flaky-test bug raised and fixed along the way, and the total time —
-   including the time spent waiting on the two human gates.
+9. **Ship.** The branch merges via PR, CI/CD run and pass — the release is recorded as `deployed`
+   in `state.md`. `docs-updater` checks whether `taskly`'s README mentions the task model and
+   updates it, and `report-generator` writes `reports/2026-07-25-high-priority-tasks.md`
+   summarizing the requirement, the design, every test file touched, the one flaky-test bug raised
+   and fixed along the way, and the total time — including the time spent waiting on the two human
+   gates. Both land together on one `docs/high-priority-tasks` housekeeping PR, which auto-merges
+   since `taskly`'s repo has no required-review rule on it; no redeploy is triggered, since
+   `taskly`'s CD workflow excludes `reports/**` from its trigger paths.
 
 Nothing about *this* example is special — it's deliberately mundane, because the guarantees above
 are meant to hold just as well for a one-field change as for something architecturally bigger.
