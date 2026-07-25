@@ -19,6 +19,7 @@ when filling a template in, especially for prose sections a placeholder can't ca
 | `{{RUNTIME_VERSION}}`   | Pinned language/runtime version             | `Node 20`                                     |
 | `{{COVERAGE_THRESHOLD}}`| Minimum combined statement-coverage %       | `90`                                          |
 | `{{WCAG_TAGS}}`         | Array literal of WCAG conformance tags scanned | `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']` |
+| `{{RELEASE_REPORT_CADENCE}}` | How many successful releases to live between automatic periodic quality reports | `10` |
 
 ## Stack-facts blocks
 

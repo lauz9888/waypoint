@@ -59,7 +59,9 @@ current shape of the machinery, and it's expected to evolve.
 
 ### The pipeline, stage by stage
 
-The full pipeline (every optional layer enabled) is 22 steps. They fall into eight phases:
+The full pipeline (every optional layer enabled) is 22 steps, plus one out-of-band step (21a)
+that fires only every so often — see [Periodic quality reporting](#periodic-quality-reporting)
+below. The 22 steps fall into eight phases:
 
 | Phase | Steps | What happens |
 |---|---|---|
@@ -119,6 +121,7 @@ tests directly — it spawns these subagents and acts on their `STATUS:` reports
 | `qa-reviewer` | The last check before merge: code quality, testability, security hygiene, accessibility, and the combined coverage gate. Makes small fixes directly; escalates the rest. |
 | `docs-updater` | Reconciles README and the wiki against what actually merged and deployed — checked against current state, not just the diff. |
 | `report-generator` | Compiles the post-change report: requirements, solution, test changes, bugs raised/resolved, total time (including human wait time). |
+| `quality-reporter` | Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption) reports across every completed run: release velocity, defect density, shift-left analysis, requirement delivery time, coverage trend, and bug-fix churn. Runs automatically every so often, or on demand. |
 
 ### Optional layers
 
@@ -161,6 +164,38 @@ part of the PR:
 
 If you close Claude Code mid-run and come back, invoking `/ship-feature` again with no new request
 finds the incomplete run and picks up exactly where it left off.
+
+### Periodic quality reporting
+
+Every completed run's `report-generator` step writes a small machine-readable metrics block into
+its report (tracking issue, elapsed time, combined coverage %, and a count of bugs raised at each
+pipeline stage) alongside the human-readable summary. A separate agent, `quality-reporter`, reads
+every one of those blocks across `reports/*.md` — the release log — and rolls them up into two
+reports written to `reports/metrics/`:
+
+- **Weekly** — the 8 most recent calendar weeks, most recent first.
+- **Monthly** — every calendar month since the earliest report on file, i.e. since Waypoint was
+  adopted in this project.
+
+Both cover the same metrics per period: **release velocity** (releases per bucket), **defect
+density** (bugs raised per release), a **shift-left histogram** (which pipeline stage caught each
+defect, from `requirement` all the way through `cd`), **average requirement delivery time**,
+**coverage trend**, and **bug-fix churn**. The shift-left histogram is the reason bug-tracking
+issues use a `cd` label distinct from `ci`: `ci` failures are caught pre-merge (Step 18, still on
+the feature branch); `cd` failures are only caught after the change reached `main` and went live
+(Step 19). Keeping them separate turns the histogram into a real escaped-to-production rate
+instead of two different kinds of failure getting averaged together.
+
+This runs two ways, both driving the same `quality-reporter` agent:
+
+- **Automatically**, every *N* successful releases to live (default 10, configurable via
+  `.claude/STANDARDS.md`'s "Release report cadence" — tracked by a small committed counter,
+  `reports/.release-count`, incremented right after each CD deploy at the pipeline's Step 21a).
+- **On demand**, any time, via the `/quality-report` skill — useful for checking in without
+  waiting for the cadence to land on a milestone.
+
+If fewer than two releases exist yet, both reports say so plainly rather than drawing a trend line
+through one data point.
 
 ### Templates vs. your project's actual pipeline
 

@@ -5,7 +5,7 @@ description: Runs the full throughline change pipeline end-to-end — requiremen
 
 You are driving a multi-step, largely-autonomous development pipeline for the throughline repo. You run in the main conversation and orchestrate specialized subagents via the `Agent` tool — you do all git/gh/file work and all direct user interaction yourself; subagents never talk to the user, they read/write files and return a `STATUS:` line you act on.
 
-Read this whole file before acting. Follow the steps in order — they mirror the user's pipeline spec 1:1 (22 steps, after Step 13's base-path smoke check was added), so don't skip or reorder one even if it looks safe to shortcut.
+Read this whole file before acting. Follow the steps in order — they mirror the user's pipeline spec 1:1 (22 steps, after Step 13's base-path smoke check was added, plus the out-of-band Step 21a for periodic quality reporting), so don't skip or reorder one even if it looks safe to shortcut.
 
 ## Pre-authorization (read this before Step 4)
 
@@ -27,7 +27,7 @@ The user has explicitly pre-authorized this workflow to create branches, merge t
 
 **Continuing a subagent vs. spawning fresh.** When a step says "resume agent X with feedback Y", use `SendMessage` (load its schema via `ToolSearch` if not already loaded) addressed to the agent instance you spawned earlier in this run, so it keeps context. Only spawn a fresh `Agent` call the first time a role is needed in this run.
 
-**Bug tracking.** File discrepancies/failures as GitHub issues: `gh issue create --label <label> --title "<slug>: <short summary>" --body "<detail>\n\nRelated to #<tracking-issue>"`. Create labels once if missing (`gh label list`, then `gh label create <name> --color <hex>` for any absent): `requirement`, `design`, `unit-test`, `bdd-test`, `e2e-test`, `qa`, `manual-test`, `deploy-path`, `ci`, `accessibility`, `security`. Close with `gh issue close <n> --comment "<what fixed it>"` once the matching check is green again.
+**Bug tracking.** File discrepancies/failures as GitHub issues: `gh issue create --label <label> --title "<slug>: <short summary>" --body "<detail>\n\nRelated to #<tracking-issue>"`. Create labels once if missing (`gh label list`, then `gh label create <name> --color <hex>` for any absent): `requirement`, `design`, `unit-test`, `bdd-test`, `e2e-test`, `qa`, `manual-test`, `deploy-path`, `ci`, `cd`, `accessibility`, `security`. `cd` is distinct from `ci`: `ci` is a pre-merge failure (Step 18, still on the feature branch/PR); `cd` is a post-merge failure caught only after the change reached `main`/live (Step 19) — keeping them separate is what lets `quality-reporter`'s shift-left analysis measure a real escaped-to-production rate instead of conflating the two. Close with `gh issue close <n> --comment "<what fixed it>"` once the matching check is green again.
 
 **Accessibility.** This isn't a separate pipeline stage — it's a lens every stage applies to UI-facing work, per each agent's own instructions: requirements-analyst always writes testable WCAG 2.1 AA requirements for new/changed UI (not gated on the user asking); solution-designer/-reviewer treat an accessibility design gap the same as a functional coverage gap; the test-author agents wire automated `jest-axe` (unit)/`@axe-core/playwright` (e2e) WCAG scans alongside behavioral tests; the implementer treats the design's accessibility decisions as part of the implementation, not optional polish; qa-reviewer reviews it explicitly and can hand back `STATUS: accessibility-gap` (handled at Step 12 like a coverage gap). Tag any accessibility-specific bug issue with the `accessibility` label in addition to its stage label.
 
@@ -119,7 +119,8 @@ Same pattern as Step 9, running `npm run test:e2e`, label `e2e-test`.
 4. On `STATUS: coverage-gap` (combined coverage below the threshold defined in `.claude/STANDARDS.md`, listing which layer(s) need more cases): route back to the matching Step 5/6/7 author agent(s) to add coverage, then re-run Steps 9–11 for the affected layer(s), then re-spawn `qa-reviewer` fresh.
 5. On `STATUS: changes-made`: re-run the full Step 9–11 suites (safety net). Any failure follows the normal bug-fixer loop from those steps.
 6. On `STATUS: approved` (no changes needed, coverage at or above the threshold defined in `.claude/STANDARDS.md`): move on.
-7. Cap the whole Step 12 cycle at 5 iterations.
+7. Once the cycle ends (via `approved` or `changes-made`), record its final `COVERAGE:` value into `state.md` as `coverage-percent: <value>` — `report-generator` reads this at Step 21 to build its metrics block.
+8. Cap the whole Step 12 cycle at 5 iterations.
 
 ## Step 13 — Base-path smoke check (pre-merge)
 
@@ -155,7 +156,7 @@ Once all CI jobs are green: `gh pr merge <pr-number> --squash --delete-branch`. 
 
 ## Step 19 — CD failure logging (no auto-fix)
 
-Watch the CD run: `gh run watch $(gh run list --workflow=cd.yml --branch main --limit 1 --json databaseId --jq '.[0].databaseId')`. Any failing job: `gh issue create --label ci --title "<slug>: CD failure — <job name>" --body "<job output>\n\nRelated to #<tracking-issue>"`. Per spec, do **not** auto-fix these — just log and tell the user. Wait for CD to finish (pass or fail) before Step 20.
+Watch the CD run: `gh run watch $(gh run list --workflow=cd.yml --branch main --limit 1 --json databaseId --jq '.[0].databaseId')`. Any failing job: `gh issue create --label cd --title "<slug>: CD failure — <job name>" --body "<job output>\n\nRelated to #<tracking-issue>"` (labeled `cd`, not `ci` — see "Bug tracking" above: this is a post-merge escape, not a pre-merge failure). Per spec, do **not** auto-fix these — just log and tell the user. Wait for CD to finish (pass or fail) before Step 20.
 
 ## Step 20 — Documentation update
 
@@ -163,7 +164,13 @@ Spawn `Agent(subagent_type="docs-updater")` with the full diff of what merged (`
 
 ## Step 21 — Post-change report
 
-Spawn `Agent(subagent_type="report-generator")` with the full `.workflow/<slug>/` directory and `gh issue list --label <tracking-issue-derived-search> --state all` (or search by "Related to #<tracking-issue>" in issue bodies) for the bug list. It writes `reports/<YYYY-MM-DD>-<slug>.md` with requirements, solution, test changes, all bugs raised + final status, and total time (`meta.json.started_at` to now — note this includes human wait time, not just active engineering time). Commit and push this directly to `main` alongside Step 20, or as its own small commit.
+Spawn `Agent(subagent_type="report-generator")` with the full `.workflow/<slug>/` directory and `gh issue list --label <tracking-issue-derived-search> --state all` (or search by "Related to #<tracking-issue>" in issue bodies) for the bug list. It writes `reports/<YYYY-MM-DD>-<slug>.md` with a machine-readable metrics block (feeds `quality-reporter`'s rollups — see Step 21a), requirements, solution, test changes, all bugs raised + final status, and total time (`meta.json.started_at` to now — note this includes human wait time, not just active engineering time). Commit and push this directly to `main` alongside Step 20, or as its own small commit.
+
+## Step 21a — Release counter + periodic quality report
+
+1. Increment the release counter: read `reports/.release-count` (create it containing `0` first if it doesn't exist yet — this is the first release ever recorded), add 1, and write it back. Commit it: `git add reports/.release-count && git commit -m "<slug>: increment release counter"` (bundle with the Step 21 commit if that hasn't been pushed yet, or make it its own small commit — either is fine, just don't skip committing it, since a lost counter breaks the cadence).
+2. If the new count is an exact multiple of **10** (per `.claude/STANDARDS.md`'s "Release report cadence" section): spawn `Agent(subagent_type="quality-reporter")` — same agent, same no-extra-input contract as the manual `/quality-report` skill. On `STATUS: complete`, commit `reports/metrics/` (same commit as the counter, or its own) and push, then fold the two report paths plus a one-line headline-numbers summary into this run's final summary (Step 22).
+3. If the new count isn't a multiple of the cadence, do nothing further this step — just make sure the counter increment itself was committed and pushed.
 
 ## Step 22 — Cleanup
 
@@ -173,4 +180,4 @@ The remote branch was already deleted by Step 18's `gh pr merge --delete-branch`
 2. If it still exists (e.g. the merge ran from a different checkout/worktree than the one driving this pipeline), delete it: `git checkout main && git branch -d feature/<slug>`.
 3. Mark `state.md` complete. `main` should now be the only branch.
 
-Report a short summary to the user: what shipped, the PR/commit, the tracking issue, total bugs raised/resolved, and the report file path.
+Report a short summary to the user: what shipped, the PR/commit, the tracking issue, total bugs raised/resolved, and the report file path — plus the two rollup report paths and a one-line headline-numbers summary if Step 21a triggered a periodic quality report this run.

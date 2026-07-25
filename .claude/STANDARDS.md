@@ -31,6 +31,14 @@ change passes `qa-reviewer`'s Step 12 gate or CI's `coverage-merge` job.
 Development and CI both target **{{RUNTIME_VERSION}}** (`package.json`'s `engines` field,
 `.github/workflows/ci.yml` and `cd.yml`'s pinned runtime version).
 
+## Release report cadence
+
+The periodic quality report (`quality-reporter`, weekly + monthly rollups of release velocity,
+defect density, shift-left analysis, and requirement delivery time) runs automatically every
+**{{RELEASE_REPORT_CADENCE}}** successful releases to live (tracked in `reports/.release-count`,
+incremented at Step 21a), in addition to being triggerable any time via the `/quality-report`
+skill.
+
 ## Security hygiene checklist
 
 Applied by `qa-reviewer.md` to every change, and by anyone reviewing a PR manually:

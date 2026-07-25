@@ -15,8 +15,8 @@ to the User Guide if you just want it running.
 | | |
 |---|---|
 | **Driving philosophy** | Spec-first, test-first; ground every decision in the actual codebase; commit to a small number of hard rules and trust agents' judgment inside them |
-| **Subagents** | 10 (11 with the optional BDD layer) |
-| **Pipeline steps** | 22 in the full pipeline, every optional layer enabled |
+| **Subagents** | 11 (12 with the optional BDD layer) |
+| **Pipeline steps** | 22 in the full pipeline, every optional layer enabled, plus an out-of-band periodic quality report |
 | **Human approval gates** | 2 — requirements approval, and manual testing |
 | **Max retry loops** | 5 iterations per loop (design review, red/green cycles, QA, manual test, CI bug-fixing), then it stops and asks |
 | **Accessibility** | WCAG 2.1 AA scanning, baseline by default — not an optional layer |
@@ -25,6 +25,7 @@ to the User Guide if you just want it running.
 | **Supported project types** | npm-, pnpm-, or yarn-based JS/TS projects |
 | **Optional layers** | BDD (Gherkin/behavioral tests); static path-prefixed deploy (e.g. GitHub Pages) |
 | **Run state** | Local `.workflow/<slug>/` scratch, gitignored, resumable across sessions |
+| **Periodic quality report** | Weekly (8 weeks) + monthly (since adoption) rollups — automatic every 10 releases (configurable), or on demand via `/quality-report` |
 
 See [Workflow Overview](Workflow-Overview#guarantees) for the reasoning behind these numbers, and
 which of them are guarantees versus current implementation details.

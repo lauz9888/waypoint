@@ -74,9 +74,10 @@ You don't need to have answers ready in advance — if something's detectable fr
 
 | Path | What it is |
 |---|---|
-| `.claude/agents/*.md` | The subagent roster (10 files, or 11 if you enabled BDD), each recreated for your actual stack. |
+| `.claude/agents/*.md` | The subagent roster (11 files, or 12 if you enabled BDD), each recreated for your actual stack. |
 | `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator, with the step numbering adjusted to whichever layers you enabled. |
-| `.claude/STANDARDS.md` | Your coverage threshold, WCAG tag scope, and runtime version — the one place to change them later. |
+| `.claude/skills/quality-report/SKILL.md` | On-demand trigger for the periodic quality/velocity rollup (see below) — `/quality-report`, no arguments. |
+| `.claude/STANDARDS.md` | Your coverage threshold, WCAG tag scope, runtime version, and quality-report cadence — the one place to change them later. |
 | `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one. |
 | `.gitignore` | Updated (or created) to exclude `.workflow/`, the pipeline's local scratch state. |
 
@@ -132,13 +133,32 @@ total includes that human wait time explicitly, so it isn't mistaken for pure en
 If you close Claude Code partway through, just run `/ship-feature` again later with no new
 request — it'll find the in-progress run and resume from where it left off.
 
+## Periodic quality reports
+
+Every completed run adds a small machine-readable summary to its `reports/<date>-<slug>.md` —
+elapsed time, combined coverage, and a count of bugs raised at each pipeline stage. Every 10
+successful releases (configurable, see below), the pipeline automatically rolls all of that up
+into two reports in `reports/metrics/`:
+
+- A **weekly** report covering the last 8 weeks.
+- A **monthly** report covering every month since you adopted Waypoint in this project.
+
+Both show release velocity, defect density, a shift-left breakdown of which pipeline stage caught
+each defect (with an explicit escaped-to-production rate — defects only caught after a change went
+live), average time to deliver a requirement, coverage trend, and bug-fix churn.
+
+You don't have to wait for the 10th release to see this — run `/quality-report` any time for an
+on-demand rollup using whatever history exists so far. If fewer than two releases have shipped
+yet, it says so plainly instead of guessing at a trend.
+
 ## Customizing your pipeline afterward
 
 Once generated, your pipeline is ordinary text in your repo — there's no magic re-sync with
 Waypoint. Common tweaks:
 
-- **Change your coverage threshold or WCAG scope** — edit `.claude/STANDARDS.md`. Every agent that
-  cares reads it from there, so this is the one place to change.
+- **Change your coverage threshold, WCAG scope, or quality-report cadence** — edit
+  `.claude/STANDARDS.md`. Every agent that cares reads it from there, so this is the one place to
+  change.
 - **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — easiest done by
   re-running `/waypoint-init` (see below) rather than hand-editing the step numbering yourself.
 - **Adjust an individual agent's behavior** — e.g. tighten what `qa-reviewer` checks, or change
@@ -178,3 +198,8 @@ the run — this is expected behavior for a genuinely stuck loop, not a bug.
 **"Where do I see what a run actually did?"** `reports/<date>-<slug>.md`, written automatically at
 the end of every successful run — requirements, solution, every test file touched, every bug raised
 and its resolution, and total time.
+
+**"Where do I see trends over time — velocity, defect rates, delivery time?"**
+`reports/metrics/weekly-<date>.md` and `monthly-<date>.md`, written automatically every 10
+releases (configurable) or any time via `/quality-report`. See
+[Periodic quality reports](User-Guide#periodic-quality-reports).
