@@ -135,21 +135,39 @@ request — it'll find the in-progress run and resume from where it left off.
 
 ## Periodic quality reports
 
-Every completed run adds a small machine-readable summary to its `reports/<date>-<slug>.md` —
-elapsed time, combined coverage, and a count of bugs raised at each pipeline stage. Every 10
-successful releases (configurable, see below), the pipeline automatically rolls all of that up
-into two reports in `reports/metrics/`:
+Beyond the per-run report in `reports/`, Waypoint keeps a rolling view of how the pipeline is
+performing over time. See [Workflow Overview](Workflow-Overview#periodic-quality-reporting) for
+exactly what each metric means and how it's computed — this section is about what you get, when
+you'll see it, and how to get it on demand.
 
-- A **weekly** report covering the last 8 weeks.
-- A **monthly** report covering every month since you adopted Waypoint in this project.
+**What you get.** Two reports in `reports/metrics/`:
 
-Both show release velocity, defect density, a shift-left breakdown of which pipeline stage caught
-each defect (with an explicit escaped-to-production rate — defects only caught after a change went
-live), average time to deliver a requirement, coverage trend, and bug-fix churn.
+- A **weekly** report covering the last 8 weeks, most recent first.
+- A **monthly** report covering every calendar month since you adopted Waypoint in this project.
 
-You don't have to wait for the 10th release to see this — run `/quality-report` any time for an
-on-demand rollup using whatever history exists so far. If fewer than two releases have shipped
-yet, it says so plainly instead of guessing at a trend.
+Each shows, per period: release velocity, defect density, a shift-left breakdown of which
+pipeline stage caught each defect (with an explicit **escaped-to-production rate** — the share of
+defects only caught *after* a change already went live), average time to deliver a requirement,
+coverage trend, and bug-fix churn — plus a plain-language "here's the trend" summary so you don't
+have to read the raw table to get the headline.
+
+**When it's triggered automatically.** Every successful release to live counts toward a running
+total. The moment that total hits a multiple of the configured cadence — **every 10th release by
+default** — the pipeline generates both reports as part of that same run, no separate action
+needed; you'll see the two file paths and a one-line summary called out in that run's final
+report to you.
+
+**How to trigger it manually.** Run:
+
+```
+/quality-report
+```
+
+any time — no arguments. It reads whatever release history already exists, regenerates both
+reports, commits them, and tells you the two file paths plus a quick headline summary. Use this
+whenever you want a current read without waiting for the automatic cadence — ahead of a retro, a
+stakeholder update, or just to check in. If fewer than two releases have shipped yet, it says so
+plainly rather than inventing a trend from too little data.
 
 ## Customizing your pipeline afterward
 

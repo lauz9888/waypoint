@@ -169,33 +169,58 @@ finds the incomplete run and picks up exactly where it left off.
 
 Every completed run's `report-generator` step writes a small machine-readable metrics block into
 its report (tracking issue, elapsed time, combined coverage %, and a count of bugs raised at each
-pipeline stage) alongside the human-readable summary. A separate agent, `quality-reporter`, reads
-every one of those blocks across `reports/*.md` — the release log — and rolls them up into two
-reports written to `reports/metrics/`:
+pipeline stage) alongside the human-readable summary — that block is the raw data source for
+everything below. A separate agent, `quality-reporter`, reads every one of those blocks across
+`reports/*.md` (which *is* the project's release log — one file per completed, deployed change)
+and rolls them up into two documents written to `reports/metrics/`.
 
-- **Weekly** — the 8 most recent calendar weeks, most recent first.
-- **Monthly** — every calendar month since the earliest report on file, i.e. since Waypoint was
-  adopted in this project.
+#### What you get
 
-Both cover the same metrics per period: **release velocity** (releases per bucket), **defect
-density** (bugs raised per release), a **shift-left histogram** (which pipeline stage caught each
-defect, from `requirement` all the way through `cd`), **average requirement delivery time**,
-**coverage trend**, and **bug-fix churn**. The shift-left histogram is the reason bug-tracking
-issues use a `cd` label distinct from `ci`: `ci` failures are caught pre-merge (Step 18, still on
-the feature branch); `cd` failures are only caught after the change reached `main` and went live
-(Step 19). Keeping them separate turns the histogram into a real escaped-to-production rate
-instead of two different kinds of failure getting averaged together.
+Two markdown reports, each with a written summary up top and a table with one row per time
+bucket:
 
-This runs two ways, both driving the same `quality-reporter` agent:
+- **`reports/metrics/weekly-<date>.md`** — the 8 most recent calendar weeks, most recent first.
+- **`reports/metrics/monthly-<date>.md`** — every calendar month since the earliest report on
+  file, i.e. since Waypoint was adopted in this project.
 
-- **Automatically**, every *N* successful releases to live (default 10, configurable via
-  `.claude/STANDARDS.md`'s "Release report cadence" — tracked by a small committed counter,
-  `reports/.release-count`, incremented right after each CD deploy at the pipeline's Step 21a).
-- **On demand**, any time, via the `/quality-report` skill — useful for checking in without
-  waiting for the cadence to land on a milestone.
+Both cover the same six metrics, computed per bucket:
 
-If fewer than two releases exist yet, both reports say so plainly rather than drawing a trend line
-through one data point.
+| Metric | What it tells you |
+|---|---|
+| **Release velocity** | How many changes shipped to live in that period — is throughput rising, falling, or flat? |
+| **Defect density** | Bugs raised per release in that period — is each release getting cleaner or messier over time? |
+| **Shift-left histogram** | Which pipeline stage caught each defect, in order from `requirement` through `cd` — with an explicit **escaped-to-production rate**, the share labeled `cd` (defects only caught *after* a change already went live). This is the headline number: it answers "are we catching problems earlier or later?" It's also why CD failures get their own `cd` label distinct from pre-merge `ci` failures — Step 18 catches things before merge, Step 19 only catches things after the change is already live, and conflating the two would hide the escape rate entirely. |
+| **Average requirement delivery time** | Mean hours from requirements kickoff to CD-live, across that period's releases. |
+| **Coverage trend** | Mean combined test coverage % across that period's releases. |
+| **Bug-fix churn** | Mean bugs raised per release — the same numerator as defect density, but tracked as its own row so a churn spike is visible even in a period where release count also moved. |
+
+Each report also closes with a plain-language comparison of the most recent bucket against the
+oldest one in that report (velocity, escaped-defect rate, delivery time — up, down, or flat), so
+you don't have to eyeball 8 rows of numbers to get the headline. If fewer than two releases exist
+yet, both reports say so plainly instead of drawing a trend line through one data point.
+
+#### When it's triggered automatically
+
+Every successful release counts: each time a change merges and its CD deploy to `main`/live
+succeeds (Step 19), a small committed counter — `reports/.release-count` — is incremented by 1
+(Step 21a). The moment that counter is an exact multiple of the configured cadence — **10 by
+default**, e.g. every 10th release — `quality-reporter` runs automatically, right there in the
+same pipeline run that tripped the milestone, and the two new report paths (plus a one-line
+headline summary) are folded into that run's final summary to you. No separate action needed.
+
+The cadence lives in `.claude/STANDARDS.md`'s "Release report cadence" section — edit the
+`{{RELEASE_REPORT_CADENCE}}` value there if you want reports more or less often (e.g. `5` for a
+fast-moving project, `20` for a slower one).
+
+#### How to trigger it manually
+
+Run `/quality-report` — no arguments needed. It spawns `quality-reporter` against whatever release
+history already exists, writes both reports, commits them directly to `main`, and tells you the
+two file paths plus a one-line headline summary (velocity trend, escaped-to-production rate).
+There's no loop or retry cap here — it's a deterministic read over existing data, so a stale or
+unwanted run just gets superseded the next time this runs, automatically or by hand. Use it any
+time you want a current read without waiting for the cadence to land on a milestone: before a
+retro, a stakeholder update, or just out of curiosity.
 
 ### Templates vs. your project's actual pipeline
 
