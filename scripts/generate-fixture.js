@@ -15,6 +15,7 @@ const path = require('path');
 const {
   substitutePlaceholders,
   resolveStackFacts,
+  validateOptionalBlocks,
   resolveOptionalBlocks,
   stripGeneratorComments,
   computeStepRenumberMap,
@@ -47,7 +48,8 @@ function readConfig(configPath) {
   return config;
 }
 
-function transformFile(text, config) {
+function transformFile(text, config, filename) {
+  validateOptionalBlocks(text, filename, Object.keys(config.layers));
   let out = text;
   out = resolveOptionalBlocks(out, config.layers);
   out = resolveStackFacts(out, config.stackFactsStubs, config.defaultStackFactsStub);
@@ -76,7 +78,7 @@ function generate(configPath, outputDir) {
   const transformed = new Map();
   for (const relPath of filesToProcess) {
     const srcPath = path.join(TEMPLATE_ROOT, relPath);
-    transformed.set(relPath, transformFile(fs.readFileSync(srcPath, 'utf8'), config));
+    transformed.set(relPath, transformFile(fs.readFileSync(srcPath, 'utf8'), config, relPath));
   }
 
   // Pass 2: SKILL.md's own headers define the renumbering map (computed only after its

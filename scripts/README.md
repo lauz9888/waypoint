@@ -9,22 +9,37 @@ static-deploy, each on/off) come out internally consistent.
 
 ## What this proves, and what it doesn't
 
-**Proves:** no `{{placeholder}}` or `WAYPOINT:` marker survives generation; the right agent-file
-set exists per enabled layer (`bdd-test-author.md` present only when BDD is on); every `Step N` /
-`Steps N–M` / `Step Na` reference — in `SKILL.md` and every other generated file — resolves to a
-step that actually exists, and the step sequence is contiguous with no gaps; each of
-`qa-reviewer`/`docs-updater`/`report-generator`/`quality-reporter`'s frontmatter agrees with
-`SKILL.md` about which step actually spawns it; disabled-layer script/label mentions
+**Proves:** no `{{placeholder}}` or `WAYPOINT:` marker survives generation; every `WAYPOINT:OPTIONAL`
+block in the source templates is well-formed before generation even starts (matched start/end, no
+nesting, a known layer name — `validateOptionalBlocks` in `lib/template-transform.js`); the right
+agent-file set exists per enabled layer (`bdd-test-author.md` present only when BDD is on); every
+`Step N` / `Steps N–M` / `Step Na` reference — in `SKILL.md` and every other generated file —
+**resolves to a step number that exists** as a header, and the step sequence is contiguous with no
+gaps; each of `qa-reviewer`/`docs-updater`/`report-generator`/`quality-reporter`'s frontmatter
+agrees with `SKILL.md` about which step actually spawns it; disabled-layer script/label mentions
 (`test:bdd`, `deploy-path`) are absent when off and present when on.
 
-**Does not prove:** that a real `{{STACK_FACTS: <layer>}}` block, once `waypoint-init` fills it in
-with real prose about a real stack, is *good* prose — accurate framework names, correct file
-locations, a sensible accessibility-scan call pattern. That still needs the judgment `waypoint-init`
-itself applies (reading the target repo, matching `examples/throughline`'s level of detail) and,
-ultimately, human review of what it generates. This tooling's fixtures fill every `STACK_FACTS`
-block with an obviously-fake stub string (`[[FIXTURE STUB: ...]]`) specifically so nobody mistakes
-it for real output — it's there purely to exercise the mechanical transform, not to model what
-`waypoint-init` should write.
+**Does not prove:**
+
+- That a `Step N` reference still means the *same thing* it meant before renumbering. The check
+  is existence, not identity: if an edit accidentally leaves a stale reference to a step number
+  that used to mean one thing, and renumbering happens to reassign that same number to a
+  *different* surviving step, the reference now silently points at the wrong concept — a plain
+  "does Step 6 exist?" check can't tell the difference, because after renumbering it genuinely
+  does exist, just not as what the sentence meant. Nothing here currently catches that; it would
+  need either annotating each cross-reference with what it's semantically pointing at (e.g.
+  symbolic markers like `{{STEP:QA}}` resolved to a number at generation time, instead of writing
+  raw numbers that have to survive renumbering unchanged) or a reviewer reading the diff by eye.
+- That a real `{{STACK_FACTS: <layer>}}` block, once `waypoint-init` fills it in with real prose
+  about a real stack, is *good* prose — accurate framework names, correct file locations, a
+  sensible accessibility-scan call pattern. That still needs the judgment `waypoint-init` itself
+  applies (reading the target repo, matching `examples/throughline`'s level of detail) and,
+  ultimately, human review of what it generates. This tooling's fixtures fill every `STACK_FACTS`
+  block with an obviously-fake stub string (`[[FIXTURE STUB: ...]]`) specifically so nobody
+  mistakes it for real output — it's there purely to exercise the mechanical transform, not to
+  model what `waypoint-init` should write.
+- That `examples/throughline` hasn't semantically drifted from the templates it was extracted
+  from — see the next section.
 
 One cosmetic side effect worth knowing about: stripping a disabled `WAYPOINT:OPTIONAL` block
 sometimes leaves a stray blank line where the block used to be (the markers themselves are usually

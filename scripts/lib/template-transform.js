@@ -14,6 +14,12 @@ const PLACEHOLDER_RE = /\{\{([A-Z0-9_]+)\}\}/g;
 // waypoint-init resolves both forms, not just the colon one.
 const STACK_FACTS_RE = /\{\{STACK_FACTS(?::\s*([\w-]+))?\s*\}\}/g;
 const OPTIONAL_BLOCK_RE = /<!-- WAYPOINT:OPTIONAL:(\w+) -->([\s\S]*?)<!-- WAYPOINT:END -->/g;
+// Matches every OPTIONAL-start and END token individually, in document order — used to validate
+// structure (balanced, non-nested, known layer names) before OPTIONAL_BLOCK_RE's non-greedy
+// pairing papers over a mistake by just matching the nearest END regardless of whether it was
+// the *intended* one.
+const OPTIONAL_TOKEN_RE = /<!-- WAYPOINT:(OPTIONAL:(\w+)|END) -->/g;
+const KNOWN_LAYERS = ['BDD', 'STATIC_SPA_DEPLOY'];
 const GENERATOR_NOTE_RE = /<!-- Generator note:[\s\S]*?-->\n?/g;
 const GENERATOR_RE = /<!-- Generator:[\s\S]*?-->\n?/g;
 const STANDALONE_WAYPOINT_NOTE_RE = /<!-- WAYPOINT: [\s\S]*?-->\n?/g;
@@ -44,6 +50,45 @@ function resolveStackFacts(text, stubsByLayer, defaultStub) {
     }
     return stub;
   });
+}
+
+/** Throws a descriptive error unless every `WAYPOINT:OPTIONAL:<layer>` start has exactly one
+ * matching `WAYPOINT:END`, blocks aren't nested, and every layer name is known — turning what
+ * was previously just an authoring convention (documented in TEMPLATE_CONVENTIONS.md, not
+ * enforced) into something generation actually fails on if violated. */
+function validateOptionalBlocks(text, filename, knownLayers = KNOWN_LAYERS) {
+  const stack = [];
+  let m;
+  OPTIONAL_TOKEN_RE.lastIndex = 0;
+  while ((m = OPTIONAL_TOKEN_RE.exec(text))) {
+    const line = text.slice(0, m.index).split('\n').length;
+    if (m[2] !== undefined) {
+      // an OPTIONAL:<layer> start
+      if (stack.length) {
+        throw new Error(
+          `${filename}:${line}: WAYPOINT:OPTIONAL:${m[2]} starts while WAYPOINT:OPTIONAL:${stack[stack.length - 1].layer} (line ${stack[stack.length - 1].line}) is still open — nested WAYPOINT:OPTIONAL blocks aren't supported`
+        );
+      }
+      if (!knownLayers.includes(m[2])) {
+        throw new Error(
+          `${filename}:${line}: unknown optional layer "${m[2]}" — known layers are ${knownLayers.join(', ')}`
+        );
+      }
+      stack.push({ layer: m[2], line });
+    } else {
+      // a WAYPOINT:END
+      if (!stack.length) {
+        throw new Error(`${filename}:${line}: WAYPOINT:END with no matching WAYPOINT:OPTIONAL:<layer> open`);
+      }
+      stack.pop();
+    }
+  }
+  if (stack.length) {
+    const unclosed = stack[stack.length - 1];
+    throw new Error(
+      `${filename}: WAYPOINT:OPTIONAL:${unclosed.layer} (line ${unclosed.line}) never closed with a matching WAYPOINT:END`
+    );
+  }
 }
 
 function resolveOptionalBlocks(text, enabledLayers) {
@@ -119,8 +164,10 @@ function findAgentSpawnStep(skillText, agentName) {
 module.exports = {
   substitutePlaceholders,
   resolveStackFacts,
+  validateOptionalBlocks,
   resolveOptionalBlocks,
   stripGeneratorComments,
+  KNOWN_LAYERS,
   findSurvivorSteps,
   computeStepRenumberMap,
   applyStepRenumberMap,

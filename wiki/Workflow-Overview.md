@@ -245,10 +245,15 @@ The mechanical part of that generation — placeholder substitution, optional-la
 renumbering — is checked in CI (`scripts/run-fixture-tests.js`, `.github/workflows/validate-templates.yml`
 in this repo) against three synthetic pipeline variants plus `examples/throughline` itself, so a
 template edit that breaks a generated pipeline's internal consistency (a dangling `Step N`
-reference, a leftover placeholder, the wrong agent-file set for a layer combination) fails a build
-instead of only surfacing the next time someone runs `waypoint-init` for real. It does *not* check
-`{{STACK_FACTS}}` prose quality — that still needs a human/LLM reading the generated output, same
-as before. See `scripts/README.md` if you're extending the templates.
+reference, a leftover placeholder, the wrong agent-file set for a layer combination, an
+unbalanced/unknown `WAYPOINT:OPTIONAL` block) fails a build instead of only surfacing the next
+time someone runs `waypoint-init` for real. Two things it deliberately does *not* check: whether a
+`{{STACK_FACTS}}` block's real, LLM-written prose is *good* (that still needs a human/LLM reading
+the generated output, same as before), and whether a `Step N` reference that survives renumbering
+still points at the *same concept* it did before — the check is that the number exists, not that
+it means what it used to mean, so a stale reference that happens to land on a different real step
+after renumbering wouldn't be caught. See `scripts/README.md` for the full breakdown, and if
+you're extending the templates.
 
 ## A hypothetical example
 

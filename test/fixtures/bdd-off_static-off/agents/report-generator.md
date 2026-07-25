@@ -17,24 +17,41 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
 
 1. Read `meta.json` for `started_at`; use the current time as the completion time. Compute total elapsed time (also as decimal hours, for the metrics block below), and state plainly that this spans human wait time too (approvals, manual testing, review turnaround, CI wait) — not just active engineering time — so it isn't misread as pure implementation effort.
 2. Read `state.md` for the branch, PR number, per-layer test file lists, `coverage-percent`
-   (recorded by the orchestrator at Step 10), and `cd-outcome` (recorded by the orchestrator right
-   after Step 16's CD watch resolves — either `deployed` or `merged-deployment-failed`).
-3. Gather the bug list: `gh issue list --search "Related to #<tracking-issue>" --state all --json number,title,state,labels,createdAt,closedAt`.
-   For each issue, determine its **single stage label** — exactly one of `requirement`, `design`,
-   `unit-test`, `e2e-test`, `qa`,
-    `manual-test`,
-   `ci`, `cd` — identifying *where in the pipeline it was caught*. `security` and `accessibility`
-   are never the stage label: per the "Bug tracking"/"Accessibility" conventions in `SKILL.md`,
-   every security/accessibility issue is always filed *with* a stage label alongside it (e.g.
-   `--label security --label qa`), so treat those two as **classification** labels layered on top,
-   not additional stages. Build two counts from this:
-   - `bugs_by_stage` — one increment per issue, under its single stage label. This is a count of
-     *issues*, not of labels — an issue with both `qa` and `security` labels increments
-     `bugs_by_stage.qa` by exactly 1, never `bugs_by_stage.security` (there is no such key).
-     Summing this map gives an accurate unique-defect count for the run.
-   - `bugs_by_category` — one increment per issue that carries `security` and/or `accessibility`,
-     kept separate and never summed into `bugs_by_stage` or a run's total defect count — these are
-     informational classifications of issues already counted once above, not additional defects.
+   (recorded by the orchestrator at Step 10), `cd-outcome` (recorded by the orchestrator right
+   after Step 16's CD watch resolves — either `deployed` or `merged-deployment-failed`), and
+   `bug-issues` — the exact list of issue numbers this run created.
+3. Fetch each issue in `bug-issues` **by number** — `gh issue view <number> --json
+   number,title,state,labels,createdAt,closedAt,body,url` — not a `gh issue list --search`. A
+   search is unbounded-result-limited by default (a run with more issues than the default page
+   size would silently produce incomplete metrics) and matches on text, which is weaker than a
+   direct lookup by an identifier you already have recorded (indexing lag, an unrelated issue
+   coincidentally containing the same text, a wording change breaking the match). `bug-issues` is
+   the authoritative source; don't fall back to searching if it's empty — an empty list means no
+   bugs were raised this run, not that you should go looking for some.
+
+   For each issue fetched, intersect its labels against the stage taxonomy — exactly one of
+   `requirement`, `design`, `unit-test`,
+   `e2e-test`, `qa`,
+   `manual-test`, `ci`, `cd` — identifying *where in the pipeline it was caught*. `security` and
+   `accessibility` are never the stage label: per the "Bug tracking"/"Accessibility" conventions
+   in `SKILL.md`, every security/accessibility issue is always filed *with* a stage label
+   alongside it (e.g. `--label security --label qa`), so treat those two as **classification**
+   labels layered on top, may be present on zero, one, or both, and never counted as a stage.
+
+   **Every issue must resolve to exactly one stage label. Do not guess if it doesn't:**
+   - Zero stage labels, or two or more: stop entirely and report `STATUS: blocked` (see "Ending
+     your turn") instead of silently picking one or dropping the issue from the count — a
+     mislabeled issue producing a wrong report is worse than no report. Name every offending issue
+     and its actual labels in the `REASON`, so it's a two-minute `gh issue edit` fix, not a mystery.
+   - Exactly one: proceed. Build two counts from the validated set:
+     - `bugs_by_stage` — one increment per issue, under its single stage label. This is a count of
+       *issues*, not of labels — an issue with both `qa` and `security` labels increments
+       `bugs_by_stage.qa` by exactly 1, never `bugs_by_stage.security` (there is no such key).
+       Summing this map gives an accurate unique-defect count for the run.
+     - `bugs_by_category` — one increment per issue that carries `security` and/or
+       `accessibility`, kept separate and never summed into `bugs_by_stage` or a run's total
+       defect count — these are informational classifications of issues already counted once
+       above, not additional defects.
    Every stage key in the taxonomy gets an entry in `bugs_by_stage` (0 if none raised this run),
    same for `security`/`accessibility` in `bugs_by_category`.
 4. Write `reports/<YYYY-MM-DD>-<slug>.md` with:
@@ -72,6 +89,20 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
    - **Time taken** — total, with the human-wait-time caveat above
 
 ## Ending your turn
+
+If any issue in `bug-issues` has zero or more than one stage label:
+
+```
+STATUS: blocked
+REASON: Issue #<n> has <zero|N> stage labels (<comma-separated actual labels, or "none">) —
+expected exactly one. Fix its labels (e.g. `gh issue edit <n> --add-label <correct> --remove-label
+<wrong>`) and re-run report-generator. <repeat per offending issue>
+```
+
+The orchestrator surfaces this to the user rather than guessing on your behalf — don't write a
+report with a wrong or missing count instead of reporting this.
+
+Otherwise:
 
 ```
 STATUS: complete
