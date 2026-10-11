@@ -62,9 +62,14 @@ wrong values here propagate into every generated agent file.
    - **Static, path-prefixed deploy** (`STATIC_SPA_DEPLOY` layer) — on/off. Applies to a
      client-only build served under a non-root path (e.g. GitHub Pages under
      `/reponame/`); doesn't apply to a server-rendered app, an API, or a root-path deploy.
+   - **Storybook layer** (`STORYBOOK`) — on/off. A component-story layer (stories with
+     interaction tests and an accessibility addon, run as a test suite) authored by
+     `unit-test-author` alongside unit tests, with its own full-suite step (Step 11a) and CI job.
+     Only meaningful for a project with a UI component library; an existing `.storybook/`
+     directory or `storybook` dependency settles it — state your detection and ask them to confirm.
 2. Plain conversation for anything Step 3 couldn't resolve or that needs a human call: project
-   name, `{{APP_STACK_SUMMARY}}` (one line), unit/e2e framework names if undetected (plus BDD's,
-   if that layer is on), the accessibility-scanning tool for each layer if undetected,
+   name, `{{APP_STACK_SUMMARY}}` (one line), unit/e2e framework names if undetected (plus BDD's
+   and Storybook's, if those layers are on), the accessibility-scanning tool for each layer if undetected,
    `{{RUNTIME_VERSION}}` if undetected, `{{COVERAGE_THRESHOLD}}` (offer 90 as the default Waypoint
    ships with, per `examples/throughline`), `{{WCAG_TAGS}}` (offer
    `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']` as the default — WCAG 2.1 AA — and ask if the
@@ -100,7 +105,8 @@ For each template file at the source, produce the target project's concrete vers
    - Delete any `<!-- Generator: ... -->` or `<!-- Generator note: ... -->` HTML comments — they're
      instructions to you, not content for the generated file.
    - In `SKILL.md` specifically: after removing disabled-layer steps (Step 6 if BDD is off, Step
-     13 if `STATIC_SPA_DEPLOY` is off), first write out an explicit old-step→new-step mapping
+     13 if `STATIC_SPA_DEPLOY` is off — the `STORYBOOK` layer's Step 11a is an out-of-band "a" step and
+     never shifts numbering; it just follows Step 11's new number, e.g. "10a" if BDD is off), first write out an explicit old-step→new-step mapping
      table for yourself (e.g. "5→5, 7→6, 8→7, 9→8, 11→9, 12→10, 14→11, ...") before touching any
      prose — renumbering by feel invites exactly the kind of off-by-one error this table exists
      to prevent. Include Step 21a in the table as "<whatever Post-change report/Step 21 maps

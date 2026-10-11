@@ -4,8 +4,8 @@ A deterministic regression suite for the *mechanical* parts of what `waypoint-in
 placeholder substitution, `WAYPOINT:OPTIONAL` layer resolution, generator-comment stripping, and
 `SKILL.md` step renumbering (including cross-file "Step N" references in agent frontmatter and
 `STANDARDS.md`). It exists because that transformation logic was previously entrusted entirely to
-an LLM's reasoning with no automated check that all four generated pipeline variants (BDD ×
-static-deploy, each on/off) come out internally consistent.
+an LLM's reasoning with no automated check that the generated pipeline variants (BDD ×
+static-deploy × Storybook) come out internally consistent.
 
 ## What this proves, and what it doesn't
 
@@ -17,7 +17,7 @@ agent-file set exists per enabled layer (`bdd-test-author.md` present only when 
 **resolves to a step number that exists** as a header, and the step sequence is contiguous with no
 gaps; each of `qa-reviewer`/`docs-updater`/`report-generator`/`quality-reporter`'s frontmatter
 agrees with `SKILL.md` about which step actually spawns it; disabled-layer script/label mentions
-(`test:bdd`, `deploy-path`) are absent when off and present when on.
+(`test:bdd`, `deploy-path`, `test:storybook`) are absent when off and present when on.
 
 **Does not prove:**
 
@@ -59,12 +59,12 @@ prose polish.
 - `validate-templates.js <dir> <config.json>` — runs every structural check above against an
   already-concrete `.claude/`-shaped directory (a generated fixture, or `examples/throughline/.claude`).
 - `run-fixture-tests.js` — the actual test entry point (`node scripts/run-fixture-tests.js`, no
-  arguments, no dependencies to install). For each of the three synthetic fixture configs under
+  arguments, no dependencies to install). For each of the four synthetic fixture configs under
   `test/fixtures/configs/`, regenerates fresh into a temp dir and diffs it against the committed
   copy under `test/fixtures/<name>/` (this diff is what catches "a template changed but the
   fixture was never regenerated" — the actual regression it's there to catch), then structurally
   validates the committed copy. Separately, structurally validates `examples/throughline/.claude`
-  directly — the fourth combination (BDD + static-deploy both on), never regenerated since its
+  directly — the BDD + static-deploy combination (Storybook off), never regenerated since its
   `STACK_FACTS` prose is real content a script can't reproduce.
 
 ## Running it
@@ -86,6 +86,7 @@ before committing:
 node scripts/generate-fixture.js test/fixtures/configs/bdd-on_static-off.json test/fixtures/bdd-on_static-off
 node scripts/generate-fixture.js test/fixtures/configs/bdd-off_static-on.json test/fixtures/bdd-off_static-on
 node scripts/generate-fixture.js test/fixtures/configs/bdd-off_static-off.json test/fixtures/bdd-off_static-off
+node scripts/generate-fixture.js test/fixtures/configs/bdd-off_static-on_storybook-on.json test/fixtures/bdd-off_static-on_storybook-on
 ```
 
 then re-run `node scripts/run-fixture-tests.js` to confirm everything's still structurally valid,

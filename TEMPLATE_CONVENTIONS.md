@@ -25,7 +25,7 @@ when filling a template in, especially for prose sections a placeholder can't ca
 
 `{{STACK_FACTS: <layer>}}` marks a prose section a placeholder can't fill mechanically — it
 names a concrete test framework/tool, file-location convention, and run command for one test
-layer (unit, BDD, e2e) or for accessibility scanning. The generator writes fresh prose here in
+layer (unit, BDD, e2e, Storybook) or for accessibility scanning. The generator writes fresh prose here in
 the same voice and level of detail as the matching "Stack facts" section in
 `examples/throughline/.claude/agents/*.md` (e.g. `unit-test-author.md`'s block names Vitest,
 `*.test.ts`/`*.test.tsx` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the exact
@@ -50,6 +50,12 @@ use:
   path-prefixed static host (the base-path smoke check in `SKILL.md` Step 13, PWA
   manifest/service-worker mentions). Doesn't apply to a server-rendered app, an API, or a
   root-path deploy.
+- `STORYBOOK` — a component-story test layer (stories with interaction tests and an
+  accessibility addon, run headlessly as a test suite): the story-authoring additions to
+  `unit-test-author`, the out-of-band Step 11a full-suite/bug loop in `SKILL.md`, the
+  `storybook-test` bug label, the `storybook`/`build-storybook`/`test:storybook` scripts, and the
+  Storybook-specific metrics in `report-generator`'s metrics block. Only meaningful for projects
+  with a UI component library. Being an `a` step, it never shifts step numbering.
 
 `bdd-test-author.md` is entirely conditional on the `BDD` layer — if a project skips it, delete
 the file outright rather than leaving an unused agent behind, and drop steps 6/10 from `SKILL.md`

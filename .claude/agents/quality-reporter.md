@@ -54,7 +54,8 @@ deployed run, each starting with a fenced ` ```metrics ` block written by `repor
      - `unit-test`
      <!-- WAYPOINT:OPTIONAL:BDD -->- `bdd-test`
      <!-- WAYPOINT:END -->- `e2e-test`
-     - `qa`
+     <!-- WAYPOINT:OPTIONAL:STORYBOOK -->- `storybook-test`
+     <!-- WAYPOINT:END -->- `qa`
      <!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY -->- `deploy-path`
      <!-- WAYPOINT:END -->- `manual-test`
      - `ci`

@@ -1,0 +1,24 @@
+{
+  "values": {
+    "PROJECT_NAME": "storyapp",
+    "APP_STACK_SUMMARY": "a Vite-built component-driven PWA, deployed to GitHub Pages under a non-root path",
+    "PKG_MANAGER": "pnpm",
+    "PKG_EXEC": "pnpm exec",
+    "RUNTIME_VERSION": "Node 20",
+    "COVERAGE_THRESHOLD": "90",
+    "WCAG_TAGS": "['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']",
+    "RELEASE_REPORT_CADENCE": "10"
+  },
+  "layers": {
+    "BDD": false,
+    "STATIC_SPA_DEPLOY": true,
+    "STORYBOOK": true
+  },
+  "stackFactsStubs": {
+    "unit-test": "[[FIXTURE STUB: unit-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "e2e-test": "[[FIXTURE STUB: e2e-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "storybook-test": "[[FIXTURE STUB: storybook-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "test-frameworks-summary": "stub test frameworks (fixture only)"
+  },
+  "defaultStackFactsStub": "[[FIXTURE STUB — not real generator output, see scripts/README.md]]"
+}

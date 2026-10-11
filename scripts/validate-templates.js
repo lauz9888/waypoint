@@ -114,6 +114,16 @@ function validate(dir, config) {
         failures.push(`skills/ship-feature/SKILL.md: found "${marker}" but BDD is disabled`);
       }
     }
+    const storybookMarkers = ['test:storybook', 'storybook-test'];
+    for (const marker of storybookMarkers) {
+      const present = skillText.includes(marker);
+      if (config.layers.STORYBOOK && !present) {
+        failures.push(`skills/ship-feature/SKILL.md: expected "${marker}" (Storybook enabled) but it's absent`);
+      }
+      if (!config.layers.STORYBOOK && present) {
+        failures.push(`skills/ship-feature/SKILL.md: found "${marker}" but Storybook is disabled`);
+      }
+    }
     const staticDeployPresent = skillText.includes('deploy-path');
     if (config.layers.STATIC_SPA_DEPLOY && !staticDeployPresent) {
       failures.push(`skills/ship-feature/SKILL.md: expected "deploy-path" (static deploy enabled) but it's absent`);

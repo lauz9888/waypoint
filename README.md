@@ -4,7 +4,7 @@
 
 A reusable, spec-first, test-first development pipeline for Claude Code — extracted from the
 `throughline` project. Every change runs through requirements → design/review → test-first
-unit/BDD/e2e → implementation → bug-fix loops → QA + coverage gate → manual test gate → merge →
+unit/BDD/e2e/Storybook → implementation → bug-fix loops → QA + coverage gate → manual test gate → merge →
 CI/CD → docs → a post-change report, orchestrated by the `/ship-feature` skill. Every 10 releases
 (configurable), or on demand via `/quality-report`, a rollup report shows release velocity, defect
 density, a shift-left analysis of when defects are caught, and requirement delivery time across

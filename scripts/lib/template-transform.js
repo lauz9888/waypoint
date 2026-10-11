@@ -19,7 +19,7 @@ const OPTIONAL_BLOCK_RE = /<!-- WAYPOINT:OPTIONAL:(\w+) -->([\s\S]*?)<!-- WAYPOI
 // pairing papers over a mistake by just matching the nearest END regardless of whether it was
 // the *intended* one.
 const OPTIONAL_TOKEN_RE = /<!-- WAYPOINT:(OPTIONAL:(\w+)|END) -->/g;
-const KNOWN_LAYERS = ['BDD', 'STATIC_SPA_DEPLOY'];
+const KNOWN_LAYERS = ['BDD', 'STATIC_SPA_DEPLOY', 'STORYBOOK'];
 const GENERATOR_NOTE_RE = /<!-- Generator note:[\s\S]*?-->\n?/g;
 const GENERATOR_RE = /<!-- Generator:[\s\S]*?-->\n?/g;
 const STANDALONE_WAYPOINT_NOTE_RE = /<!-- WAYPOINT: [\s\S]*?-->\n?/g;

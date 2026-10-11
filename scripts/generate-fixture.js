@@ -42,8 +42,10 @@ function readConfig(configPath) {
       throw new Error(`Config ${configPath} is missing values.${key}`);
     }
   }
-  if (!config.layers || !('BDD' in config.layers) || !('STATIC_SPA_DEPLOY' in config.layers)) {
-    throw new Error(`Config ${configPath} must set layers.BDD and layers.STATIC_SPA_DEPLOY`);
+  for (const layer of ['BDD', 'STATIC_SPA_DEPLOY', 'STORYBOOK']) {
+    if (!config.layers || !(layer in config.layers)) {
+      throw new Error(`Config ${configPath} must set layers.${layer}`);
+    }
   }
   return config;
 }

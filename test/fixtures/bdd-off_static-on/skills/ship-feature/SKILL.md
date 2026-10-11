@@ -90,6 +90,7 @@ Run the **full** unit suite yourself: `pnpm run test:unit`. On failure: `gh issu
 
 Same pattern as Step 8, running `pnpm run test:e2e`, label `e2e-test`.
 
+
 ## Step 10 — QA review + coverage gate
 
 1. Spawn `Agent(subagent_type="qa-reviewer")` with the full diff (`git diff main...HEAD`), `design.md`, and `requirements.md`. It reviews best practice/readability/efficiency/maintainability/testability/accessibility, sanity-checks against requirements, computes combined coverage (`pnpm run test:coverage:merge`), and makes any code-quality/small-a11y fixes directly. As of the corresponding CI jobs (`ci.yml`), the audit/e2e/coverage gates this step enforces are now also enforced automatically on every push/PR, as defense-in-depth for any change that reaches `main` outside this pipeline (e.g. a Dependabot PR, or a manual commit). This step's own gates remain the pre-merge, fast-feedback path _within_ a pipeline run — don't skip Step 10 on the assumption CI will catch it; CI is the backstop, not a replacement for the in-pipeline check.
@@ -150,6 +151,7 @@ Steps 6 and 11 run `test:e2e` against a local preview built with the default bas
 ## Step 13 — Merge to main
 
 On confirmation from Step 12: push the branch (`git push -u origin feature/<slug>`), open a PR (`gh pr create --title "<slug>" --body "Closes #<tracking-issue>" --base main --head feature/<slug>`), record the PR number in `state.md`. This push is what triggers CI (Steps 14–15).
+
 
 ## Steps 14–15 — CI / CD
 

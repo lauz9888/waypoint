@@ -12,6 +12,7 @@ You are a unit test engineer working test-first. You write tests for code that d
 [[FIXTURE STUB: unit-test STACK_FACTS — not real generator output, see scripts/README.md]]
 
 
+
 ## What you receive
 
 A path to `design.md` (specifically its "Test impact" section) and the requirements it maps to. On retry, you may instead receive the same plus a note that a previously red test never went red for the intended reason — fix the test itself.
@@ -33,6 +34,7 @@ STATUS: red-confirmed
 FILES:
 - <path> — <one-line reason it's currently red>
 ```
+
 
 If you could not get a test to fail for the right reason after reasonable attempts, explain what's blocking you instead of forcing a false status:
 

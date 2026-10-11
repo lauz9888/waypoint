@@ -2,14 +2,14 @@
 'use strict';
 
 /**
- * The actual regression test the external review asked for: proves all four generated pipeline
- * variants (BDD x static-deploy on/off) are internally valid, plus that examples/throughline
+ * The actual regression test the external review asked for: proves the generated pipeline
+ * variants (BDD x static-deploy x Storybook) are internally valid, plus that examples/throughline
  * hasn't structurally drifted from the templates it was extracted from.
  *
- * Three of the four combinations are freshly regenerated from .claude/ on every run and diffed
+ * The synthetic combinations are freshly regenerated from .claude/ on every run and diffed
  * against the committed copy under test/fixtures/ — that diff is what actually catches "someone
- * edited a template but never regenerated the fixture." The fourth combination (BDD +
- * static-deploy both on) is examples/throughline itself: it's never regenerated (its STACK_FACTS
+ * edited a template but never regenerated the fixture." The BDD + static-deploy
+ * combination is examples/throughline itself: it's never regenerated (its STACK_FACTS
  * prose is real, hand-written content a mechanical script can't reproduce), only structurally
  * validated.
  *
@@ -26,7 +26,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const FIXTURES_DIR = path.join(REPO_ROOT, 'test', 'fixtures');
 const CONFIGS_DIR = path.join(FIXTURES_DIR, 'configs');
 
-const SYNTHETIC_FIXTURES = ['bdd-on_static-off', 'bdd-off_static-on', 'bdd-off_static-off'];
+const SYNTHETIC_FIXTURES = ['bdd-on_static-off', 'bdd-off_static-on', 'bdd-off_static-off', 'bdd-off_static-on_storybook-on'];
 
 function walkFiles(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -100,7 +100,7 @@ function main() {
     }
   }
 
-  // The fourth combination: examples/throughline, validated structurally only (never regenerated).
+  // The BDD + static-deploy combination: examples/throughline, validated structurally only (never regenerated).
   const throughlineDir = path.join(REPO_ROOT, 'examples', 'throughline', '.claude');
   const throughlineConfig = JSON.parse(fs.readFileSync(path.join(CONFIGS_DIR, 'throughline.json'), 'utf8'));
   const throughlineFailures = validate(throughlineDir, throughlineConfig);
@@ -116,7 +116,7 @@ function main() {
     console.error('\nOne or more fixture checks failed.');
     process.exit(1);
   }
-  console.log('\nAll fixture checks passed — all four generated pipeline variants are structurally valid.');
+  console.log('\nAll fixture checks passed — every generated pipeline variant is structurally valid.');
 }
 
 main();

@@ -40,7 +40,7 @@ actual tool if it takes tags a different way):
 ## Combined coverage threshold
 
 The combined statement-coverage percentage across all enabled test layers (unit
-<!-- WAYPOINT:OPTIONAL:BDD -->+ BDD<!-- WAYPOINT:END --> + e2e, per
+<!-- WAYPOINT:OPTIONAL:BDD -->+ BDD<!-- WAYPOINT:END --> + e2e<!-- WAYPOINT:OPTIONAL:STORYBOOK --> + Storybook<!-- WAYPOINT:END -->, per
 `{{PKG_MANAGER}} run test:coverage:merge`) must be **at least {{COVERAGE_THRESHOLD}}%** before a
 change passes `qa-reviewer`'s Step 12 gate or CI's `coverage-merge` job.
 

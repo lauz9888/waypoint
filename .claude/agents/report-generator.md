@@ -31,7 +31,7 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
 
    For each issue fetched, intersect its labels against the stage taxonomy — exactly one of
    `requirement`, `design`, `unit-test`,<!-- WAYPOINT:OPTIONAL:BDD --> `bdd-test`,<!-- WAYPOINT:END -->
-   `e2e-test`, `qa`,<!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY --> `deploy-path`,<!-- WAYPOINT:END -->
+   `e2e-test`,<!-- WAYPOINT:OPTIONAL:STORYBOOK --> `storybook-test`,<!-- WAYPOINT:END --> `qa`,<!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY --> `deploy-path`,<!-- WAYPOINT:END -->
    `manual-test`, `ci`, `cd` — identifying *where in the pipeline it was caught*. `security` and
    `accessibility` are never the stage label: per the "Bug tracking"/"Accessibility" conventions
    in `SKILL.md`, every security/accessibility issue is always filed *with* a stage label
@@ -63,14 +63,18 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
      completed_at: <now, ISO 8601>
      total_hours: <decimal hours, e.g. 29.5>
      coverage_percent: <state.md's coverage-percent>
-     outcome: <state.md's cd-outcome — "deployed" or "merged-deployment-failed">
+     <!-- WAYPOINT:OPTIONAL:STORYBOOK -->storybook_story_count: <count of exported stories across all story files>
+     storybook_interaction_test_count: <count of stories with an interaction/play function>
+     storybook_a11y_pass_rate: <"<passed>/<total> stories" from the test:storybook run>
+     <!-- WAYPOINT:END -->outcome: <state.md's cd-outcome — "deployed" or "merged-deployment-failed">
      bugs_by_stage:
        requirement: <count>
        design: <count>
        unit-test: <count>
      <!-- WAYPOINT:OPTIONAL:BDD -->  bdd-test: <count>
      <!-- WAYPOINT:END -->  e2e-test: <count>
-       qa: <count>
+     <!-- WAYPOINT:OPTIONAL:STORYBOOK -->  storybook-test: <count>
+     <!-- WAYPOINT:END -->  qa: <count>
      <!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY -->  deploy-path: <count>
      <!-- WAYPOINT:END -->  manual-test: <count>
        ci: <count>
@@ -82,7 +86,7 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
      ````
    - **Requirements** — summary from `requirements.md`
    - **Solution** — summary from `design.md`
-   - **Test changes** — the per-layer file lists from `state.md`, one line each on what they cover, noting which include an automated WCAG scan
+   - **Test changes** — the per-layer file lists from `state.md`<!-- WAYPOINT:OPTIONAL:STORYBOOK --> (including `storybook-test-files`, when recorded)<!-- WAYPOINT:END -->, one line each on what they cover, noting which include an automated WCAG scan
    - **Accessibility** — one line per UI-facing requirement in `requirements.md` on how it's covered (design decision + automated scan), and a short list of any issues carrying the `accessibility` label (from the grouped bug list below) with their resolution
    - **Bugs raised** — grouped by stage/label, each with opened/closed timestamps and resolution summary (from the issue body/close comment)
    - **Coverage** — the combined coverage % from `state.md`

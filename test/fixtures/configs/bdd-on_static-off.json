@@ -11,7 +11,8 @@
   },
   "layers": {
     "BDD": true,
-    "STATIC_SPA_DEPLOY": false
+    "STATIC_SPA_DEPLOY": false,
+    "STORYBOOK": false
   },
   "stackFactsStubs": {
     "unit-test": "[[FIXTURE STUB: unit-test STACK_FACTS — not real generator output, see scripts/README.md]]",

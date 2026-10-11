@@ -61,6 +61,8 @@ questions:
    - Whether to enable the **static, path-prefixed deploy** layer — relevant only if you're
      shipping a client-only build to a non-root path like GitHub Pages; off for anything
      server-rendered or deployed at the root.
+   - Whether to enable the **Storybook** layer (component stories run as interaction +
+     accessibility tests) — off by default unless it detects Storybook already in use.
 2. **A short conversational back-and-forth** for anything left over: your project's one-line
    description, which test frameworks you use (if not auto-detected), your coverage threshold
    (90% is the default), and the WCAG conformance level to scan for (WCAG 2.1 AA by default).
@@ -110,7 +112,7 @@ Here's what to expect, in order:
 2. **Design (automatic).** A solution is designed and reviewed against your requirements in the
    background. You're not asked to approve this step — a dedicated reviewer agent is the check —
    but you'll see it happen.
-3. **Tests, written red.** Unit (and BDD/e2e, per your enabled layers) tests get written for
+3. **Tests, written red.** Unit (and BDD/e2e/Storybook, per your enabled layers) tests get written for
    behavior that doesn't exist yet, and confirmed to fail for the right reason.
 4. **Implementation.** Code gets written to the approved design and requirements — the red tests
    are immediate, executable evidence it got there, not the whole definition of "done" — while

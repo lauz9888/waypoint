@@ -73,9 +73,9 @@ below. The 22 steps fall into eight phases:
 | **1. Requirements** | 1–2 | The user's request becomes a precise, testable `requirements.md` — the first human gate. |
 | **2. Design** | 3 | A solution design is proposed and reviewed against the requirements until it holds up — no human gate; the reviewer is the check. |
 | **3. Branch** | 4 | A feature branch is created. |
-| **4. Test-first (red)** | 5–7 | Unit, BDD, and e2e tests are written for behavior that doesn't exist yet, and each is confirmed to fail *for the right reason*. |
+| **4. Test-first (red)** | 5–7 | Unit, BDD, and e2e tests (plus Storybook stories, if that layer is on) are written for behavior that doesn't exist yet, and each is confirmed to fail *for the right reason*. |
 | **5. Implementation (green)** | 8 | The implementer builds to the approved design and requirements — the red tests are immediate, executable evidence it got there, not the complete definition of done — while staying scoped to what the design describes. |
-| **6. Full suites + bug loops** | 9–11 | Each full test suite runs; any failure is filed as a GitHub issue and fixed in a loop until green. |
+| **6. Full suites + bug loops** | 9–11 (+ 11a with Storybook) | Each full test suite runs; any failure is filed as a GitHub issue and fixed in a loop until green. |
 | **7. Quality gates** | 12–14 | QA review + combined coverage gate, an optional pre-merge base-path smoke check, then manual testing — the second human gate. |
 | **8. Ship** | 15–22 | Merge, CI/CD (watched, with an autonomous CI bug-fix loop; CD failures are logged, not auto-fixed, and the release is recorded as merged-but-not-live rather than shipped), then docs reconciliation, the post-change report, and the release counter/metrics land together as one reviewed housekeeping PR (not direct pushes to `main`) before cleanup. |
 
@@ -118,7 +118,7 @@ tests directly — it spawns these subagents and acts on their `STATUS:` reports
 | `requirements-analyst` | Turns a raw request into a numbered, testable `requirements.md`, grounded in the existing codebase. Asks clarifying questions rather than guessing. |
 | `solution-designer` | Proposes file-level changes to satisfy the requirements — coverage map, test impact, accessibility decisions, ADRs where warranted. |
 | `solution-reviewer` | Judges the design against the requirements and codebase — coverage, fit, scope, testability, accessibility — and hands back approve or specific feedback. |
-| `unit-test-author` | Writes unit tests for behavior that doesn't exist yet and proves they're red for the right reason. |
+| `unit-test-author` | Writes unit tests (and, with the Storybook layer, the matching component stories) for behavior that doesn't exist yet and proves they're red for the right reason. |
 | `bdd-test-author` *(optional layer)* | Same, for a Gherkin/behavioral test layer, if the project has one. |
 | `e2e-test-author` | Same, for full end-to-end specs. |
 | `implementer` | Turns the approved design into working code, scoped to making the red tests green — no unrequested refactors. |
@@ -130,7 +130,7 @@ tests directly — it spawns these subagents and acts on their `STATUS:` reports
 
 ### Optional layers
 
-Not every project needs every layer. Two are toggled per adopting project (see the
+Not every project needs every layer. Three are toggled per adopting project (see the
 [User Guide](User-Guide) for how):
 
 - **BDD** — a separate Gherkin/behavioral test layer between unit and e2e. Some teams want it;
@@ -139,6 +139,11 @@ Not every project needs every layer. Two are toggled per adopting project (see t
   manifest/service-worker handling, relevant only to a client-only build served under a non-root
   path (e.g. GitHub Pages under `/reponame/`). Doesn't apply to a server-rendered app, an API, or a
   root-path deploy.
+- **Storybook** — a fourth test layer of component stories, each run headlessly as a test with
+  interaction (`play`-style) checks and an accessibility scan. `unit-test-author` writes stories
+  alongside unit tests, a dedicated full-suite step (11a) and CI job run them, and Storybook
+  coverage counts toward the combined coverage gate. Only worth it for a project with a UI
+  component library.
 
 Turning a layer off removes its steps and agent(s) entirely from the generated pipeline rather
 than leaving inert scaffolding behind.

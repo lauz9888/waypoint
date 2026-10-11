@@ -23,7 +23,7 @@ to the User Guide if you just want it running.
 | **Coverage threshold** | 90% by default, configurable per project |
 | **Supported VCS / issue tracker** | GitHub only, via the `gh` CLI — fixed, not configurable in this version |
 | **Supported project types** | npm-, pnpm-, or yarn-based JS/TS projects |
-| **Optional layers** | BDD (Gherkin/behavioral tests); static path-prefixed deploy (e.g. GitHub Pages) |
+| **Optional layers** | BDD (Gherkin/behavioral tests); static path-prefixed deploy (e.g. GitHub Pages); Storybook (component stories with interaction + accessibility tests) |
 | **Run state** | Local `.workflow/<slug>/` scratch, gitignored, resumable across sessions |
 | **Periodic quality report** | Weekly (8 weeks) + monthly (since adoption) rollups — automatic every 10 releases (configurable), or on demand via `/quality-report` |
 | **Trust model** | Repository content, issue/PR text, logs, and command output are treated as untrusted data by every agent, never as instructions — see `.claude/STANDARDS.md` |
@@ -33,7 +33,7 @@ which of them are guarantees versus current implementation details.
 
 ## Who this is for
 
-Waypoint is built for teams and individual developers who are already shipping an npm/pnpm/yarn
+Waypoint is built for teams and individual developers who are already or wish to start shipping an npm/pnpm/yarn
 JS or TS project on GitHub with Claude Code, and want every change — not just the important ones —
 to go through the same disciplined, tested, accessible-by-default process without having to
 re-explain that process in every conversation. It suits people who'd rather commit to a small set
@@ -49,4 +49,4 @@ supported in this version (see
 
 ### Can a non-developer use Waypoint?
 
-Yes, provided someone has already set up the pipeline. Waypoint still expects human decisions about requirements and manual testing, but the technical implementation is handled by the workflow.
+Yes, provided they can understand and follow the installation instructions in the User Guide. Waypoint still expects human decisions about requirements and manual testing, but the technical implementation is handled by the workflow.
