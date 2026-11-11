@@ -1,18 +1,12 @@
 'use strict';
 
 /**
- * Deterministic, mechanical subset of what waypoint-init does to a template file.
- * This does NOT replicate the whole generator — {{STACK_FACTS: <layer>}} blocks need real
- * LLM-written prose about a real stack, which this module fills with an obviously-fake stub
- * instead. See scripts/README.md for what that does and doesn't prove.
+ * Deterministic, mechanical subset of what waypoint-init does to a template file: optional-layer
+ * resolution and generator-comment stripping, plus the step-ID parsing the validator uses. The
+ * project-specific prose waypoint-init writes into .waypoint/stack.md isn't modelled here. See
+ * scripts/README.md for what that does and doesn't prove.
  */
 
-const PLACEHOLDER_RE = /\{\{([A-Z0-9_]+)\}\}/g;
-// Matches both the colon form ({{STACK_FACTS: unit-test}}, a dedicated prose block) and the
-// bare form ({{STACK_FACTS}}, used inline in a sentence, e.g. "see `{{STACK_FACTS}}` in each
-// test-author agent") — examples/throughline has zero literal "STACK_FACTS" text anywhere, so
-// waypoint-init resolves both forms, not just the colon one.
-const STACK_FACTS_RE = /\{\{STACK_FACTS(?::\s*([\w-]+))?\s*\}\}/g;
 const OPTIONAL_BLOCK_RE = /<!-- WAYPOINT:OPTIONAL:(\w+) -->([\s\S]*?)<!-- WAYPOINT:END -->/g;
 // Matches every OPTIONAL-start and END token individually, in document order — used to validate
 // structure (balanced, non-nested, known layer names) before OPTIONAL_BLOCK_RE's non-greedy
@@ -32,25 +26,6 @@ const STEP_REF_RE = /\bSteps?\s+(\d+a?)((?:\s*[–/-]\s*\d+a?)*)/g;
 
 // A whole "## Step N — Title" / "## Steps N–M — Title" header line.
 const STEP_HEADER_LINE_RE = /^## Steps?\s+(\d+a?)(?:\s*[–-]\s*(\d+a?))?\s+—\s+(.+?)\s*$/;
-
-function substitutePlaceholders(text, values) {
-  return text.replace(PLACEHOLDER_RE, (whole, key) => {
-    if (!(key in values)) {
-      throw new Error(`Missing placeholder value for {{${key}}}`);
-    }
-    return values[key];
-  });
-}
-
-function resolveStackFacts(text, stubsByLayer, defaultStub) {
-  return text.replace(STACK_FACTS_RE, (whole, layer) => {
-    const stub = (stubsByLayer && stubsByLayer[layer]) || defaultStub;
-    if (!stub) {
-      throw new Error(`No stub STACK_FACTS text for layer "${layer}" and no default provided`);
-    }
-    return stub;
-  });
-}
 
 /** Throws a descriptive error unless every `WAYPOINT:OPTIONAL:<layer>` start has exactly one
  * matching `WAYPOINT:END`, blocks aren't nested, and every layer name is known — turning what
@@ -157,8 +132,6 @@ function findAgentSpawnStep(skillText, agentName) {
 }
 
 module.exports = {
-  substitutePlaceholders,
-  resolveStackFacts,
   validateOptionalBlocks,
   resolveOptionalBlocks,
   stripGeneratorComments,

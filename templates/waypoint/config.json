@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "my-app",
+    "summary": "a one-line description of the app and its deploy target"
+  },
+  "packageManager": "npm",
+  "packageExec": "npx",
+  "runtimeVersion": "Node 20",
+  "layers": {
+    "BDD": false,
+    "STATIC_SPA_DEPLOY": false,
+    "STORYBOOK": false
+  },
+  "coverage": {
+    "statements": 90,
+    "branches": 90
+  },
+  "wcagTags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+  "releaseReportCadence": 10
+}

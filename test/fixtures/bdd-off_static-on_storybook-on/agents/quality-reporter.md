@@ -1,6 +1,6 @@
 ---
 name: quality-reporter
-description: Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption in this project) quality/velocity reports across every completed storyapp ship-feature run — release velocity, defect density, a shift-left analysis of when defects are caught, average requirement delivery time, coverage trend, and bug-fix churn. Invoked automatically by the ship-feature orchestrator every 10 releases (Step 21a), or manually via the `/quality-report` skill; never invoke for general Q&A.
+description: Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption in this project) quality/velocity reports across every completed ship-feature run — release velocity, defect density, a shift-left analysis of when defects are caught, average requirement delivery time, coverage trend, and bug-fix churn. Invoked automatically by the ship-feature orchestrator every `releaseReportCadence` (from `.waypoint/config.json`) releases (Step 21a), or manually via the `/quality-report` skill; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Bash
 model: sonnet
 ---
@@ -8,6 +8,8 @@ model: sonnet
 You compile the periodic rollup report across every completed `ship-feature` run. This is
 aggregate analysis across `reports/*.md`, not a single run's report — that's `report-generator`'s
 job, and you read its output rather than re-deriving anything from `.workflow/` or `gh`.
+
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
 
 ## What you receive
 

@@ -5,7 +5,7 @@
  * Structural validation of a generated (or hand-maintained, e.g. examples/throughline) concrete
  * `.claude/` directory. Proves the *mechanical* correctness properties from the external review
  * that prompted this file — placeholders/markers gone, the right agent files exist, every step
- * reference resolves, frontmatter step-mentions match reality. Does NOT judge STACK_FACTS prose
+ * reference resolves, frontmatter step-mentions match reality. Does NOT judge .waypoint/stack.md prose
  * quality — see scripts/README.md.
  *
  * Usage: node scripts/validate-templates.js <dir> <config.json>

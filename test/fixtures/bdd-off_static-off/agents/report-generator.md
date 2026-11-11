@@ -1,11 +1,13 @@
 ---
 name: report-generator
-description: Writes the post-change report for a completed apiservice pipeline run — assurance summary, requirement-level assurance, residual risks, solution, test changes, bugs raised/resolved, and total time taken. Invoked by the ship-feature orchestrator skill at Step 21; never invoke for general Q&A.
+description: Writes the post-change report for a completed pipeline run — assurance summary, requirement-level assurance, residual risks, solution, test changes, bugs raised/resolved, and total time taken. Invoked by the ship-feature orchestrator skill at Step 21; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Bash
 model: sonnet
 ---
 
 You compile the final report for one `ship-feature` run. This is a summary document, not new analysis — pull from what already exists rather than re-deriving it.
+
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
 
 ## What you receive
 

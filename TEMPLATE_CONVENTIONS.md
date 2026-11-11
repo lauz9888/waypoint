@@ -1,38 +1,45 @@
 # Template conventions
 
-The files under `.claude/` in this repo are **templates**, not a working pipeline — they're
-meant to be read and rewritten, once, by a future `waypoint-init` generator (or a human) into a
-concrete `.claude/` for an adopting project. `examples/throughline/` holds the original, fully
-concrete files this pipeline was extracted from — the worked example to pattern-match against
-when filling a template in, especially for prose sections a placeholder can't capture on its own.
+The files under `.claude/` in this repo are **templates**, not a working pipeline. They contain
+nothing specific to one project: everything that differs between projects lives in the adopting
+project's `.waypoint/` directory, which the agents read while they run. `waypoint-init` writes
+`.waypoint/` from what it detects and confirms, and copies `.claude/` with only the optional
+layers resolved — so any two projects with the same layers have identical `.claude/` files.
+`examples/throughline/` is a worked example: the project this pipeline was extracted from, with
+its real `.waypoint/` and the `.claude/` generated for it.
 
-## Inline placeholders
+## `.waypoint/config.json`
 
-`{{PLACEHOLDER_NAME}}` — a single value substituted verbatim wherever it appears.
+Every project-specific value, as JSON (shape: `templates/waypoint/config.json`; checked by
+`scripts/lib/waypoint-config.js`). Templates refer to a field by name — e.g. "`coverage.branches`
+from `.waypoint/config.json`" — and never repeat its value.
 
-| Placeholder            | Meaning                                    | throughline's value                          |
-| ----------------------- | ------------------------------------------- | --------------------------------------------- |
-| `{{PROJECT_NAME}}`      | The adopting repo's name                    | `throughline`                                 |
-| `{{APP_STACK_SUMMARY}}` | One-line description of the app and its deploy target | "a Vite-built PWA, deployed to GitHub Pages" |
-| `{{PKG_MANAGER}}`       | Command used to run package scripts         | `npm`                                         |
-| `{{PKG_EXEC}}`          | Command used to run a package binary directly | `npx`                                       |
-| `{{RUNTIME_VERSION}}`   | Pinned language/runtime version             | `Node 20`                                     |
-| `{{COVERAGE_THRESHOLD}}`| Minimum combined statement-coverage %       | `90`                                          |
-| `{{BRANCH_COVERAGE_THRESHOLD}}` | Minimum combined branch-coverage % | — (throughline predates branch gating; default offered is `90`) |
-| `{{WCAG_TAGS}}`         | Array literal of WCAG conformance tags scanned | `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']` |
-| `{{RELEASE_REPORT_CADENCE}}` | How many successful releases to live between automatic periodic quality reports | `10` |
+| Field                  | Meaning                                    | throughline's value                          |
+| ---------------------- | ------------------------------------------- | --------------------------------------------- |
+| `schemaVersion`        | Version of this file's shape                | `1`                                           |
+| `project.name`         | The adopting repo's name                    | `throughline`                                 |
+| `project.summary`      | One-line description of the app and its deploy target | "a Vite-built PWA, deployed to GitHub Pages" |
+| `packageManager`       | Command used to run package scripts — written `<pm>` in template commands | `npm`                  |
+| `packageExec`          | Command used to run a package binary directly — written `<pm-exec>` | `npx`                       |
+| `runtimeVersion`       | Pinned language/runtime version             | `Node 20`                                     |
+| `layers`               | Which optional layers are on (see below)    | `BDD` and `STATIC_SPA_DEPLOY` on, `STORYBOOK` off |
+| `coverage.statements`  | Minimum combined statement-coverage %       | `90`                                          |
+| `coverage.branches`    | Minimum combined branch-coverage %          | `90` (throughline predates branch gating; this is the default offered) |
+| `wcagTags`             | WCAG conformance tags every automated scan is scoped to | `["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]` |
+| `releaseReportCadence` | How many successful releases to live between automatic periodic quality reports | `10` |
 
-## Stack-facts blocks
+## `.waypoint/stack.md`
 
-`{{STACK_FACTS: <layer>}}` marks a prose section a placeholder can't fill mechanically — it
-names a concrete test framework/tool, file-location convention, and run command for one test
-layer (unit, BDD, e2e, Storybook) or for accessibility scanning; `{{STACK_FACTS: coverage}}` in
-`STANDARDS.md` is the per-layer coverage instrumentation plan (provider, primary/secondary role,
-output path, shared exclusions). The generator writes fresh prose here in
-the same voice and level of detail as the matching "Stack facts" section in
-`examples/throughline/.claude/agents/*.md` (e.g. `unit-test-author.md`'s block names Vitest,
-`*.test.ts`/`*.test.tsx` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the exact
-`axe()` call pattern) — don't leave the placeholder token itself in a finished project.
+The project's stack facts — prose no single value can capture. One `## <section>` per concern:
+`test-frameworks` (one line naming each layer's framework); `unit-test`, `bdd-test`, `e2e-test` and
+`storybook-test` (framework, file locations and naming, run command, and the accessibility-scanning
+tool with the exact call pattern to follow); and `coverage` (the per-layer coverage
+instrumentation plan: provider, primary/secondary role, output path, shared exclusions). Agents look
+sections up by heading, so the headings are fixed; a disabled layer's section is left out.
+`waypoint-init` writes it from `templates/waypoint/stack.md`'s generator comments, in the voice and
+level of detail of `examples/throughline/.waypoint/stack.md` (e.g. its `unit-test` section names
+Vitest, `*.test.ts`/`*.test.tsx` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the
+exact `axe()` call pattern).
 
 ## Optional layers
 
@@ -94,9 +101,9 @@ it follows (as Steps 11a and 21a do) keeps every existing reference valid. Fixed
   `format:check`, `dev`, `test:unit`, `test:bdd`, `test:e2e`, `test:coverage:merge` — the last
   with a fixed output format, defined in `STANDARDS.md`'s "Coverage measurement" section). This is a
   Waypoint convention every adopting project commits to, independent of which tool implements
-  each script — only the tool behind each name and how it's invoked (`{{PKG_MANAGER}}`/
-  `{{PKG_EXEC}}`) varies.
-- **Accessibility as a default-on concern** for any UI-facing work. The *tooling* named inside
-  each `{{STACK_FACTS}}` block varies by framework, but whether to scan for WCAG conformance at
+  each script — only the tool behind each name and how it's invoked (`packageManager`/
+  `packageExec`) varies.
+- **Accessibility as a default-on concern** for any UI-facing work. The *tooling* named in each
+  layer's section of `.waypoint/stack.md` varies by framework, but whether to scan for WCAG conformance at
   all isn't an optional layer the way BDD or static-SPA deploy are — Waypoint's premise is
   "reusable workflow for web app development," and a11y is treated as baseline, not opt-in.

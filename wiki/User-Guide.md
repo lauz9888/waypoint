@@ -84,17 +84,20 @@ You don't need to have answers ready in advance — if something's detectable fr
 
 | Path | What it is |
 |---|---|
-| `.claude/agents/*.md` | The subagent roster (11 files, or 12 if you enabled BDD), each recreated for your actual stack. |
+| `.waypoint/config.json` | Your project's settings: name and one-line summary, package manager, runtime version, which optional layers are on, coverage thresholds, WCAG tag scope, and quality-report cadence — the one place to change them later. |
+| `.waypoint/stack.md` | Your stack facts in prose: each test layer's framework, file locations, run command and accessibility-scanning pattern, plus how coverage is measured per layer. |
+| `.claude/agents/*.md` | The subagent roster (11 files, or 12 if you enabled BDD). They read your stack details from `.waypoint/` while they run, so they're the same files every Waypoint project with your layers gets. |
 | `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator, with the steps of any layer you didn't enable removed. Step numbers never change, so a gap (e.g. no Step 6 without BDD) is expected. |
 | `.claude/skills/quality-report/SKILL.md` | On-demand trigger for the periodic quality/velocity rollup (see below) — `/quality-report`, no arguments. |
-| `.claude/STANDARDS.md` | Your coverage thresholds and how coverage is measured, WCAG tag scope, runtime version, and quality-report cadence — the one place to change them later. |
+| `.claude/STANDARDS.md` | The rules every agent shares: the trust boundary, how coverage is measured and validated, requirements traceability, and the security checklist. Project values it relies on come from `.waypoint/config.json`. |
 | `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one. |
 | `.gitignore` | Updated (or created) to exclude `.workflow/`, the pipeline's local scratch state. |
 
-These are concrete files — no `{{placeholders}}` or template markers should remain anywhere in
-them (`waypoint-init` checks this itself before finishing, but it's worth a skim). They're yours
-now: edit them freely, same as any other file in your repo. There's no ongoing link back to the
-Waypoint repository.
+No template markers or generator comments should remain anywhere in these files
+(`waypoint-init` checks this itself before finishing, but it's worth a skim), and
+`.waypoint/stack.md` is the one to read closely — it's the prose `waypoint-init` wrote about your
+stack, and every test-writing agent follows it. They're yours now: edit them freely, same as any
+other file in your repo. There's no ongoing link back to the Waypoint repository.
 
 ## Step 5 — Commit the generated pipeline
 
@@ -208,9 +211,11 @@ plainly rather than inventing a trend from too little data.
 Once generated, your pipeline is ordinary text in your repo — there's no magic re-sync with
 Waypoint. Common tweaks:
 
-- **Change your coverage thresholds or instrumentation plan, WCAG scope, or quality-report cadence** — edit
-  `.claude/STANDARDS.md`. Every agent that cares reads it from there, so this is the one place to
-  change.
+- **Change your coverage thresholds, WCAG scope, or quality-report cadence** — edit
+  `.waypoint/config.json`. Every agent that cares reads it from there, so this is the one place to
+  change (CI's `coverage-merge` job mirrors the thresholds as env vars — update those too).
+- **Change a stack detail or your coverage instrumentation plan** (switched test runner, new
+  accessibility tool, moved spec folder) — edit the matching section of `.waypoint/stack.md`.
 - **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — easiest done by
   re-running `/waypoint-init` (see below) rather than hand-copying that layer's steps, agents and
   labels into your files.

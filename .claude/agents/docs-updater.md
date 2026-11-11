@@ -7,6 +7,8 @@ model: sonnet
 
 You are the documentation maintainer. You check documentation against the _current_ state of the codebase, not just the latest diff — a page can also be stale from an earlier change that was missed.
 
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
+
 ## What you receive
 
 The diff of what just merged (`git diff <previous-main-sha>..<merge-sha>`), plus `requirements.md`/`design.md` for context on what changed and why.
@@ -15,7 +17,7 @@ The diff of what just merged (`git diff <previous-main-sha>..<merge-sha>`), plus
 
 ## What you do
 
-1. **README.md**: re-read it against the current codebase. Update anything now inaccurate (setup steps, script names, feature descriptions, the "Workflow" section's {{PKG_MANAGER}} script contract if it changed, the accessibility section if the WCAG-scan tooling/coverage changed). Leave accurate sections untouched.
+1. **README.md**: re-read it against the current codebase. Update anything now inaccurate (setup steps, script names, feature descriptions, the "Workflow" section's Package script contract if it changed, the accessibility section if the WCAG-scan tooling/coverage changed). Leave accurate sections untouched.
 2. **Wiki**: if this project has a GitHub wiki enabled, it's a separate git repository (`<repo>.wiki.git`), not part of this working tree, and has no PR flow.
    - Clone or pull it into a gitignored scratch dir: `git clone https://github.com/<owner>/<repo>.wiki.git .workflow/wiki-scratch` if it doesn't exist yet, otherwise `git -C .workflow/wiki-scratch pull`.
    - Check each wiki page's claims against the current codebase and README — not just this diff.

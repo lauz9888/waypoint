@@ -1,6 +1,6 @@
 ---
 name: quality-report
-description: On-demand trigger for {{PROJECT_NAME}}'s periodic quality/velocity rollup — spawns `quality-reporter` to write fresh weekly (past 8 weeks) and monthly (since Waypoint's adoption in this project) reports to `reports/metrics/`, the same reports the `ship-feature` pipeline generates automatically every {{RELEASE_REPORT_CADENCE}} releases (its Step 21a). Invoke with `/quality-report` — no arguments needed.
+description: On-demand trigger for this project's periodic quality/velocity rollup — spawns `quality-reporter` to write fresh weekly (past 8 weeks) and monthly (since Waypoint's adoption in this project) reports to `reports/metrics/`, the same reports the `ship-feature` pipeline generates automatically every `releaseReportCadence` (from `.waypoint/config.json`) releases (its Step 21a). Invoke with `/quality-report` — no arguments needed.
 ---
 
 You are triggering an on-demand run of the periodic quality report. This is a single-purpose

@@ -2,61 +2,36 @@
 'use strict';
 
 /**
- * Generates a concrete fixture from Waypoint's .claude/ templates, the same mechanical way a
- * real waypoint-init run would (placeholder substitution, optional-layer resolution, generator
- * comment stripping) — everything EXCEPT writing real STACK_FACTS
- * prose, which needs an LLM that actually knows a real stack. See scripts/README.md.
+ * Generates a concrete .claude/ from Waypoint's templates, the same mechanical way a real
+ * waypoint-init run does: resolve the optional layers a project's .waypoint/config.json turns on
+ * or off, and strip generator comments. Nothing else changes — every project-specific value lives
+ * in .waypoint/, so the generated files are identical for any two projects with the same layers.
+ * Writing .waypoint/stack.md's prose needs an LLM that knows the real stack, so it isn't done here.
+ * See scripts/README.md.
  *
- * Usage: node scripts/generate-fixture.js <config.json> <outputDir>
+ * Usage: node scripts/generate-fixture.js <.waypoint/config.json> <outputDir>
  */
 
 const fs = require('fs');
 const path = require('path');
-const {
-  substitutePlaceholders,
-  resolveStackFacts,
-  validateOptionalBlocks,
-  resolveOptionalBlocks,
-  stripGeneratorComments,
-} = require('./lib/template-transform');
+const { validateOptionalBlocks, resolveOptionalBlocks, stripGeneratorComments } = require('./lib/template-transform');
+const { validateConfig } = require('./lib/waypoint-config');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TEMPLATE_ROOT = path.join(REPO_ROOT, '.claude');
 
 function readConfig(configPath) {
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  const required = [
-    'PROJECT_NAME',
-    'APP_STACK_SUMMARY',
-    'PKG_MANAGER',
-    'PKG_EXEC',
-    'RUNTIME_VERSION',
-    'COVERAGE_THRESHOLD',
-    'BRANCH_COVERAGE_THRESHOLD',
-    'WCAG_TAGS',
-    'RELEASE_REPORT_CADENCE',
-  ];
-  for (const key of required) {
-    if (!(key in config.values)) {
-      throw new Error(`Config ${configPath} is missing values.${key}`);
-    }
-  }
-  for (const layer of ['BDD', 'STATIC_SPA_DEPLOY', 'STORYBOOK']) {
-    if (!config.layers || !(layer in config.layers)) {
-      throw new Error(`Config ${configPath} must set layers.${layer}`);
-    }
+  const errors = validateConfig(config);
+  if (errors.length) {
+    throw new Error(`Config ${configPath} is invalid:\n  - ${errors.join('\n  - ')}`);
   }
   return config;
 }
 
 function transformFile(text, config, filename) {
   validateOptionalBlocks(text, filename, Object.keys(config.layers));
-  let out = text;
-  out = resolveOptionalBlocks(out, config.layers);
-  out = resolveStackFacts(out, config.stackFactsStubs, config.defaultStackFactsStub);
-  out = substitutePlaceholders(out, config.values);
-  out = stripGeneratorComments(out);
-  return out;
+  return stripGeneratorComments(resolveOptionalBlocks(text, config.layers));
 }
 
 function generate(configPath, outputDir) {

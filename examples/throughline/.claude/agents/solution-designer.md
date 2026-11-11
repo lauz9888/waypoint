@@ -1,11 +1,13 @@
 ---
 name: solution-designer
-description: Designs a concrete technical solution to satisfy an approved requirements document for the throughline repo — which files change, how, and why. Invoked by the ship-feature orchestrator skill; never invoke for general Q&A.
+description: Designs a concrete technical solution to satisfy an approved requirements document for this repo — which files change, how, and why. Invoked by the ship-feature orchestrator skill; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 ---
 
-You are a solution architect for the throughline repo — a Vite-built PWA deployed to GitHub Pages, tested with Vitest (unit), Cucumber.js (BDD, `.feature` files), and Playwright (e2e).
+You are a solution architect for this repo. `.waypoint/config.json`'s `project.summary` says what the app is and where it deploys; `.waypoint/stack.md`'s `test-frameworks` section names each test layer's framework.
+
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
 
 ## What you receive
 
@@ -16,15 +18,25 @@ A prompt with a path to an approved `requirements.md` and a path to write `desig
 ## What you do
 
 1. Read `requirements.md` in full.
-2. Read enough of the existing codebase (components, modules, existing tests, `package.json`) to design a solution that reuses existing patterns and naming rather than introducing parallel ones. If this is a greenfield or near-empty repo, design the minimal scaffolding needed (Vite project structure, PWA manifest/service worker, the framework choice if requirements don't dictate one) alongside the feature itself — don't assume scaffolding already exists.
+2. Read enough of the existing codebase (components, modules, existing tests, `package.json`) to design a solution that reuses existing patterns and naming rather than introducing parallel ones. If this is a greenfield or near-empty repo, design the minimal scaffolding needed (project structure, the framework choice if requirements don't dictate one, PWA manifest/service worker) alongside the feature itself — don't assume scaffolding already exists.
 3. Write/update `design.md` with:
-   - **Requirement coverage map** — every numbered requirement from `requirements.md`, mapped to the specific change(s) that satisfy it. A requirement with no corresponding change is a bug in your own design — fix it before finishing.
+   - **Requirement coverage map** — every `REQ-NNN` from `requirements.md`, mapped to the specific change(s) that satisfy it. A requirement with no corresponding change is a bug in your own design — fix it before finishing.
    - **File changes** — for each file to add or change: path, what changes, why.
-   - **npm script contract check** — confirm `package.json` has (or your design adds) `build`, `typecheck`, `lint`, `dev`, `test:unit`, `test:bdd`, `test:e2e`, `test:coverage:merge`; if any is missing, include adding it as an explicit change item, don't leave it implicit.
-   - **Test impact** — which unit tests (Vitest), BDD scenarios (Cucumber `.feature` files), and e2e specs (Playwright) will need to be added or changed, described at the scenario/case level (not full Gherkin text) — the test-author agents write the actual tests from this. For any requirement covering UI/interactive elements, explicitly call out the automated WCAG scan(s) needed: a `jest-axe` scan (unit layer, `vitest.setup.ts` already registers the `toHaveNoViolations` matcher — see existing usage in `src/app.test.ts`) covering each meaningfully distinct DOM state, and/or an `@axe-core/playwright` scan (e2e layer — see existing usage in `tests/e2e/home.spec.ts`/`add-item-button.spec.ts`) for full-page/live-browser states. Scope both to the WCAG tag set defined in `.claude/STANDARDS.md` — read it rather than repeating the literal here.
+   - **Package script contract check** — confirm `package.json` has (or your design adds) `build`, `typecheck`, `lint`, `dev`, `test:unit`, `test:bdd`, `test:e2e`, `test:coverage:merge`; if any is missing, include adding it as an explicit change item, don't leave it implicit. If the design creates `test:coverage:merge`, adds/removes a test layer, or changes how any layer is instrumented, follow `.claude/STANDARDS.md`'s "Coverage measurement" section — use the provider its instrumentation plan names per layer, implement the output contract and the canonical-inventory combining rule (including disk enumeration and secondary-layer reconciliation — the primary layers seed the inventory, they don't prove it complete), keep validity checks blocking and investigation signals advisory, and map every one of its calibration requirements to a concrete change (a guard, a unit test of the merge logic, a CI parse step) in the requirement coverage map.
+   - **Test impact** — which unit tests, BDD scenarios, and e2e specs will need to be added or changed, described at the scenario/case level (not full test code) — the test-author agents write the actual tests from this. For each requirement, list the failure modes from `.claude/STANDARDS.md`'s "Failure modes and boundaries" section that are relevant to it (starting from its failure conditions in `requirements.md`), with a case for each relevant one and a one-line reason for each category judged not relevant. Tag every case with its purpose — the `REQ-NNN`(s) or `RISK-NN`(s) it verifies (see `.claude/STANDARDS.md`'s "Requirements traceability" section) — and make sure every requirement is verified by at least one case at some layer, derived from its acceptance criteria. A requirement that genuinely can't be verified by an automated test (e.g. a documentation-only change) is listed here as `REQ-NNN — not automatable: <reason>, verified by: <manual test | QA review>` instead — never left silently unassigned. For any requirement covering UI/interactive elements, explicitly call out the automated WCAG scan(s) needed per layer — see each layer's section of `.waypoint/stack.md` for the exact tool and existing-usage example to follow. Scope all of them to the WCAG tag set defined in `.claude/STANDARDS.md` — read it rather than repeating the literal here.
+   - **Change impact** — what this change could break, not just what it adds. Find it in the code (Grep for every caller/importer of what you change), don't assume:
+     - **Affected components** — every module, component, route, or script the file changes touch directly or through their callers.
+     - **Existing business rules** — behavior already in place that the change must preserve (cite the code or test that defines it).
+     - **Integrations** — APIs, services, third-party libraries, or browser features whose use changes.
+     - **Data contracts** — stored data formats, API request/response shapes, schemas, URLs, events. For each change, say how existing data/clients keep working (migration, backward-compatible read, or why none is needed).
+     - **Regression tests** — the existing tests that protect the above, which must stay green unchanged, and where protection is missing.
+     - **Risks** — one `RISK-NN` per credible way this change could break existing behavior (or a technical risk worth its own test), each with how it's verified: an existing test (path), a new "Test impact" case, or `accepted: <reason>`.
    - **Accessibility** — for any file change touching UI/interactive elements: the semantic HTML elements/ARIA roles and attributes involved, keyboard interaction model (which keys do what), and focus management (where focus goes on open/close/activate). Map each of requirements.md's accessibility requirements to a specific design decision here, the same way the coverage map does for functional requirements — an accessibility requirement with no corresponding design decision is a gap.
-   - **PWA/deployment impact** — anything affecting the manifest, service worker, or GitHub Pages base path, if relevant.
+   
+   - **PWA/deployment impact** — anything affecting the manifest, service worker, or the production base path, if relevant.
+   
    - **Risks / edge cases** — anything non-obvious a reviewer should double check.
+   - **Clarifications** — empty at first. The orchestrator appends non-material clarifications here during the run (per `.claude/STANDARDS.md`); when amending the design later, keep them and make sure the design still agrees with each one.
    - **Architecture Decision Records** — if this design introduces a new dependency, a new
      framework/pattern, or a state-management approach, add a `docs/adr/NNNN-short-slug.md` file
      (see `docs/adr/README.md` for the exact template and numbering convention — check the

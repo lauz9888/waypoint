@@ -241,9 +241,8 @@ default**, e.g. every 10th release — `quality-reporter` runs automatically, ri
 same pipeline run that tripped the milestone, and the two new report paths (plus a one-line
 headline summary) are folded into that run's final summary to you. No separate action needed.
 
-The cadence lives in `.claude/STANDARDS.md`'s "Release report cadence" section — edit the
-`{{RELEASE_REPORT_CADENCE}}` value there if you want reports more or less often (e.g. `5` for a
-fast-moving project, `20` for a slower one).
+The cadence is `releaseReportCadence` in your project's `.waypoint/config.json` — change it there
+if you want reports more or less often (e.g. `5` for a fast-moving project, `20` for a slower one).
 
 #### How to trigger it manually
 
@@ -257,29 +256,32 @@ retro, a stakeholder update, or just out of curiosity.
 
 ### Templates vs. your project's actual pipeline
 
-This repository (Waypoint) holds **templates** — files with placeholders like `{{PROJECT_NAME}}`
-and conditional blocks for the optional layers — not a runnable pipeline itself. `waypoint-init`
-reads those templates, inspects *your* project, and writes out a concrete, literal pipeline into
-*your* `.claude/` directory: real framework names, real thresholds, no template syntax left behind.
-From then on, your project's copy is yours — edit it freely, it has no ongoing link back to this
-repository. See the [User Guide](User-Guide) to actually do this.
+This repository (Waypoint) holds **templates** — the pipeline's agents, skills and shared
+standards, with conditional blocks for the optional layers — not a runnable pipeline itself. The
+templates contain nothing specific to any one project. `waypoint-init` inspects *your* project and
+writes everything specific to it into *your* `.waypoint/` directory: `config.json` (name, package
+manager, enabled layers, thresholds, WCAG tags, report cadence) and `stack.md` (real framework
+names, file locations, run commands and accessibility-scan patterns per layer). It then copies the
+templates into your `.claude/` with only the optional layers resolved; the agents read `.waypoint/`
+while they run. From then on, your project's copy is yours — edit it freely, it has no ongoing link
+back to this repository. See the [User Guide](User-Guide) to actually do this.
 
 Step numbers are fixed IDs: every Waypoint project uses the same number for the same step, and
 generation never renumbers them. A project without an optional layer just has a gap where that
 layer's steps would be (no Steps 6 and 10 without BDD, no Step 13 without the path-prefixed deploy
 layer).
 
-The mechanical part of that generation — placeholder substitution, optional-layer resolution, and
-the step-number rules — is checked in CI (`scripts/run-fixture-tests.js`,
-`.github/workflows/validate-templates.yml` in this repo) against four synthetic pipeline variants
-plus `examples/throughline` itself. A template edit that breaks a generated pipeline's internal
-consistency fails a build instead of only surfacing the next time someone runs `waypoint-init` for
-real: a dangling `Step N` reference, a step whose number and title don't match the template's, a
-leftover placeholder, the wrong agent-file set for a layer combination, or an unbalanced/unknown
-`WAYPOINT:OPTIONAL` block. Two things it deliberately does *not* check: whether a
-`{{STACK_FACTS}}` block's real, LLM-written prose is *good* (that still needs a human/LLM reading
-the generated output, same as before), and whether a template author wrote the step number they
-meant — a mention of Step 12 where Step 15 was intended still passes, because Step 12 exists. See
+The mechanical part of that generation — optional-layer resolution, the step-number rules, and
+the shape of `.waypoint/config.json` and `stack.md` — is checked in CI
+(`scripts/run-fixture-tests.js`, `.github/workflows/validate-templates.yml` in this repo) against
+four synthetic pipeline variants plus `examples/throughline` itself. A template edit that breaks a
+generated pipeline's internal consistency fails a build instead of only surfacing the next time
+someone runs `waypoint-init` for real: a dangling `Step N` reference, a step whose number and title
+don't match the template's, leftover template syntax, the wrong agent-file set for a layer
+combination, an unbalanced/unknown `WAYPOINT:OPTIONAL` block, or a missing or invalid config field
+or stack section. Two things it deliberately does *not* check: whether the prose `waypoint-init`
+writes into a real `stack.md` is *good* (that still needs a human/LLM reading it), and whether a
+template author wrote the step number they meant — a mention of Step 12 where Step 15 was intended still passes, because Step 12 exists. See
 `scripts/README.md` for the full breakdown if you're extending the templates.
 
 ## A hypothetical example
