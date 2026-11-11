@@ -44,7 +44,8 @@ The diff for this change (`git diff main...HEAD`), `design.md`, `requirements.md
    - **Investigation signals (advisory).** For each signal the script prints or you observe, investigate rather than ruling on the pattern alone: open the flagged source file and the layer's entries for it, and decide whether the pattern is legitimate (e.g. a single straight-line function really does give uniform hit counts) or evidence of broken instrumentation (e.g. hits recorded on a line no test could execute). Record each as **confirmed invalid** (cite the objective evidence — it's now a validity failure → `STATUS: coverage-invalid`), **explained** (one-line reason), or **unresolved** (what you checked and why it's inconclusive). Explained and unresolved signals never block on their own: report them in `COVERAGE_SIGNALS` on whatever status you return.
    - For any validity failure or unresolved signal, establish whether it predates this change — the coverage tooling involved is untouched by this diff, or a run in a separate `git worktree` of `main` shows the same thing — and say which.
 8. If combined statement or branch coverage is below its threshold in `.claude/STANDARDS.md`, identify which layer(s) and which specific lines/branches are uncovered — you do not write the missing tests yourself (that's each layer's test-author agent's job), you report exactly what's missing so the orchestrator can route it.
-9. If you made any code changes, note them clearly — the orchestrator will re-run all enabled test suites afterward as a safety net.
+9. **Residual risk.** List every significant residual risk (per `.claude/STANDARDS.md`'s "Residual risk and the assurance summary") in `RESIDUAL_RISKS` on whatever status you return, each with why it's unresolved and what would resolve it. These don't block on their own — they're recorded and shown to the user before manual testing — so be honest rather than minimizing them. Also give the counts the assurance summary needs in `REQUIREMENTS`.
+10. If you made any code changes, note them clearly — the orchestrator will re-run all enabled test suites afterward as a safety net.
 
 ## Ending your turn
 
@@ -66,6 +67,8 @@ If step 1 found anything — this takes precedence over `coverage-gap`, `changes
 STATUS: verification-gap
 FINDINGS:
 - <REQ-NNN | RISK-NN | test path | changed file> — <unimplemented | partial | contradicted | not effectively verified | survives plausible wrong implementation: <which> | test without purpose | redundant test | unrequested scope | outside change impact> — <evidence: file/line, or the test that should catch it and why it doesn't> — suspected cause: <implementation | missing or weak test | design | requirement itself unclear or wrong>
+RESIDUAL_RISKS: <none, or the list below>
+ASSERTION_CHALLENGES: <the list below>
 ```
 
 If a UI/interactive change is missing an automated WCAG scan (and it's not something you can add yourself — that's the test-author agents' job):
@@ -89,7 +92,7 @@ COVERAGE_SIGNALS:
 - <as below>
 ```
 
-Every status that reports coverage also carries an `ASSERTION_CHALLENGES:` list (one line each: `<REQ-NNN | RISK-NN> — <plausible wrong implementation> — caught by: <test and assertion> | NOT caught` (proved | reasoned)) — `NOT caught` entries only appear on `verification-gap`.
+`verification-gap`, `changes-made`, and `approved` also carry `RESIDUAL_RISKS:` (`none`, or one line each: `<RISK-NN | REQ-NNN | area> — <risk> — <why unresolved> — <what would resolve it>`) and an `ASSERTION_CHALLENGES:` list (one line each: `<REQ-NNN | RISK-NN> — <plausible wrong implementation> — caught by: <test and assertion> | NOT caught` (proved | reasoned)) — `NOT caught` entries only appear on `verification-gap`.
 
 Every status below that reports coverage also carries a `COVERAGE_SIGNALS:` list — `none` if there were no investigation signals, otherwise one line per signal:
 
@@ -117,7 +120,9 @@ STATUS: changes-made
 COVERAGE: <combined statement %>
 BRANCH_COVERAGE: <combined branch %>
 COVERAGE_SIGNALS: <none, or the list above>
-REQUIREMENTS: <verified>/<total> implemented and verified (list any verified by review only, as REQ-NNN — not automatable)
+REQUIREMENTS: <verified>/<total> implemented and verified; critical without effective assertions: <count> (list any verified by review only, as REQ-NNN — not automatable)
+RESIDUAL_RISKS: <none, or the list above>
+ASSERTION_CHALLENGES: <the list above>
 FILES_CHANGED: <comma-separated list>
 SUMMARY: <what you changed and why>
 ```
@@ -129,5 +134,7 @@ STATUS: approved
 COVERAGE: <combined statement %>
 BRANCH_COVERAGE: <combined branch %>
 COVERAGE_SIGNALS: <none, or the list above>
-REQUIREMENTS: <verified>/<total> implemented and verified (list any verified by review only, as REQ-NNN — not automatable)
+REQUIREMENTS: <verified>/<total> implemented and verified; critical without effective assertions: <count> (list any verified by review only, as REQ-NNN — not automatable)
+RESIDUAL_RISKS: <none, or the list above>
+ASSERTION_CHALLENGES: <the list above>
 ```

@@ -334,6 +334,29 @@ with no such assertion is a finding, not a hypothetical. Where it's cheap, prove
 wrong implementation in a throwaway `git worktree`, run the relevant tests, and confirm they fail.
 Don't generate an open-ended list of hypotheticals.
 
+### Residual risk and the assurance summary
+
+Coverage is one piece of evidence, not the release decision. A **significant residual risk** is
+anything QA judges could plausibly harm users, data, or security and that this run leaves
+unresolved: a `RISK-NN` accepted rather than tested, a requirement verified by review only, an
+unresolved coverage signal, a known limitation. Each stays visible — in `traceability.md`, at the
+manual-test gate, and in the post-change report — however good coverage looks.
+
+The assurance summary shown at the manual-test gate and at the top of the post-change report lists
+the individual pieces of evidence side by side. **Never combine them into a composite score** — an
+unresolved significant risk must stay visible even when every other line is excellent:
+
+| Evidence | Value |
+|---|---|
+| Statement coverage | <combined statement %> |
+| Branch coverage | <combined branch %> |
+| Requirements mapped to verification | <verified>/<total non-withdrawn> |
+| Critical requirements without effective assertions | <count> |
+| Risks (`RISK-NN`) tested / accepted | <tested> / <accepted> |
+| Unresolved significant risks | <count> (listed below the table) |
+| Clarifications (material / non-material) | <material> / <non-material> |
+| Manual acceptance | <passed | skipped: reason | pending> |
+
 ### Protecting test expectations
 
 A failing test is evidence, not an obstacle. When fixing a defect, an agent preserves each test's
