@@ -6,6 +6,7 @@
     "PKG_EXEC": "npx",
     "RUNTIME_VERSION": "Node 20",
     "COVERAGE_THRESHOLD": "90",
+    "BRANCH_COVERAGE_THRESHOLD": "85",
     "WCAG_TAGS": "['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']",
     "RELEASE_REPORT_CADENCE": "10"
   },
@@ -18,6 +19,7 @@
     "unit-test": "[[FIXTURE STUB: unit-test STACK_FACTS — not real generator output, see scripts/README.md]]",
     "bdd-test": "[[FIXTURE STUB: bdd-test STACK_FACTS — not real generator output, see scripts/README.md]]",
     "e2e-test": "[[FIXTURE STUB: e2e-test STACK_FACTS — not real generator output, see scripts/README.md]]",
+    "coverage": "[[FIXTURE STUB: coverage STACK_FACTS — not real generator output, see scripts/README.md]]",
     "test-frameworks-summary": "stub test frameworks (fixture only)"
   },
   "defaultStackFactsStub": "[[FIXTURE STUB — not real generator output, see scripts/README.md]]"

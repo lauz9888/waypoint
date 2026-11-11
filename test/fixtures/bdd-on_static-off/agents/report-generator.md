@@ -16,7 +16,7 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
 ## What you do
 
 1. Read `meta.json` for `started_at`; use the current time as the completion time. Compute total elapsed time (also as decimal hours, for the metrics block below), and state plainly that this spans human wait time too (approvals, manual testing, review turnaround, CI wait) — not just active engineering time — so it isn't misread as pure implementation effort.
-2. Read `state.md` for the branch, PR number, per-layer test file lists, `coverage-percent`
+2. Read `state.md` for the branch, PR number, per-layer test file lists, `coverage-percent`, `branch-coverage-percent`, `coverage-investigations`
    (recorded by the orchestrator at Step 12), `cd-outcome` (recorded by the orchestrator right
    after Step 18's CD watch resolves — either `deployed` or `merged-deployment-failed`), and
    `bug-issues` — the exact list of issue numbers this run created.
@@ -63,6 +63,8 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
      completed_at: <now, ISO 8601>
      total_hours: <decimal hours, e.g. 29.5>
      coverage_percent: <state.md's coverage-percent>
+     branch_coverage_percent: <state.md's branch-coverage-percent>
+     coverage_method: <the "Coverage method version" in .claude/STANDARDS.md at merge time, e.g. v2>
      outcome: <state.md's cd-outcome — "deployed" or "merged-deployment-failed">
      bugs_by_stage:
        requirement: <count>
@@ -84,7 +86,7 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `sta
    - **Test changes** — the per-layer file lists from `state.md`, one line each on what they cover, noting which include an automated WCAG scan
    - **Accessibility** — one line per UI-facing requirement in `requirements.md` on how it's covered (design decision + automated scan), and a short list of any issues carrying the `accessibility` label (from the grouped bug list below) with their resolution
    - **Bugs raised** — grouped by stage/label, each with opened/closed timestamps and resolution summary (from the issue body/close comment)
-   - **Coverage** — the combined coverage % from `state.md`
+   - **Coverage** — the combined statement and branch coverage % from `state.md`, the coverage method version, and any open coverage investigations (`state.md`'s `coverage-investigations`, fetched by number — one line each with its title and state; these are measurement questions, not defects, so they never go in `bugs_by_stage`)
    - **Outcome** — one line: whether this change is live (`deployed`) or merged but not currently
      live (`merged-deployment-failed`, with a pointer to the CD-failure issue if so)
    - **Time taken** — total, with the human-wait-time caveat above

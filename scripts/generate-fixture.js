@@ -34,6 +34,7 @@ function readConfig(configPath) {
     'PKG_EXEC',
     'RUNTIME_VERSION',
     'COVERAGE_THRESHOLD',
+    'BRANCH_COVERAGE_THRESHOLD',
     'WCAG_TAGS',
     'RELEASE_REPORT_CADENCE',
   ];

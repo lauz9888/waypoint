@@ -20,7 +20,7 @@ to the User Guide if you just want it running.
 | **Human approval gates** | 2 — requirements approval, and manual testing |
 | **Max retry loops** | 5 iterations per loop (design review, red/green cycles, QA, manual test, CI bug-fixing), then it stops and asks |
 | **Accessibility** | WCAG 2.1 AA scanning, baseline by default — not an optional layer |
-| **Coverage threshold** | 90% by default, configurable per project |
+| **Coverage thresholds** | Combined statement **and** branch coverage, 90% each by default, configurable per project — a figure that's objectively invalid (double-counted, missing source files, counting non-code) never passes the gate; merely suspicious patterns trigger an investigation instead of a block |
 | **Supported VCS / issue tracker** | GitHub only, via the `gh` CLI — fixed, not configurable in this version |
 | **Supported project types** | npm-, pnpm-, or yarn-based JS/TS projects |
 | **Optional layers** | BDD (Gherkin/behavioral tests); static path-prefixed deploy (e.g. GitHub Pages); Storybook (component stories with interaction + accessibility tests) |

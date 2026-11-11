@@ -64,8 +64,16 @@ questions:
    - Whether to enable the **Storybook** layer (component stories run as interaction +
      accessibility tests) — off by default unless it detects Storybook already in use.
 2. **A short conversational back-and-forth** for anything left over: your project's one-line
-   description, which test frameworks you use (if not auto-detected), your coverage threshold
-   (90% is the default), and the WCAG conformance level to scan for (WCAG 2.1 AA by default).
+   description, which test frameworks you use (if not auto-detected), your statement and branch
+   coverage thresholds (90% each is the default), and the WCAG conformance level to scan for
+   (WCAG 2.1 AA by default).
+3. **Your coverage instrumentation plan** — a per-layer table of which tool measures coverage for
+   each test layer, which layer defines the set of statements being counted, and which files are
+   excluded. `waypoint-init` fills in what it detected and proposes safe defaults for the rest
+   (for example, measuring e2e coverage from a separate instrumented build rather than the
+   minified production bundle, which silently reports every line as covered). If your project
+   already has `test:coverage:merge`, it runs it once and tells you whether the figure is valid —
+   and if not, recommends making the measurement fix your first `/ship-feature`.
 
 You don't need to have answers ready in advance — if something's detectable from your repo,
 `waypoint-init` will tell you what it found and just ask you to confirm.
@@ -79,7 +87,7 @@ You don't need to have answers ready in advance — if something's detectable fr
 | `.claude/agents/*.md` | The subagent roster (11 files, or 12 if you enabled BDD), each recreated for your actual stack. |
 | `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator, with the step numbering adjusted to whichever layers you enabled. |
 | `.claude/skills/quality-report/SKILL.md` | On-demand trigger for the periodic quality/velocity rollup (see below) — `/quality-report`, no arguments. |
-| `.claude/STANDARDS.md` | Your coverage threshold, WCAG tag scope, runtime version, and quality-report cadence — the one place to change them later. |
+| `.claude/STANDARDS.md` | Your coverage thresholds and how coverage is measured, WCAG tag scope, runtime version, and quality-report cadence — the one place to change them later. |
 | `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one. |
 | `.gitignore` | Updated (or created) to exclude `.workflow/`, the pipeline's local scratch state. |
 
@@ -120,8 +128,13 @@ Here's what to expect, in order:
 5. **Full suites + auto-fixing.** Every test suite runs in full; any failure becomes a GitHub issue
    and gets fixed automatically, looping until green.
 6. **Quality gates.** A QA review checks code quality, security hygiene, accessibility, and
-   combined coverage against your threshold. If anything's short, it loops back to add coverage or
-   fix gaps — automatically.
+   combined statement and branch coverage against your thresholds — after first checking the
+   figure is valid: no double counting across layers, no non-code lines counted, and every source
+   file actually in the count (checked against the files on disk, not just whatever the test
+   tools happened to report). If anything's short, it loops back to add coverage or fix gaps —
+   automatically. A provably broken measurement blocks the gate; a merely suspicious one (say,
+   every line in a file hit exactly once) is investigated, and if it can't be explained it's
+   filed as a non-blocking `coverage-investigation` issue rather than stopping your change.
 7. **Manual testing.** The app starts locally and **you're given a URL to test yourself** — the
    second and last point you're asked to act. If something's wrong, it gets classified before
    routing — an implementation defect goes to bug-fixing and re-test as you'd expect, but a wrong
@@ -186,7 +199,7 @@ plainly rather than inventing a trend from too little data.
 Once generated, your pipeline is ordinary text in your repo — there's no magic re-sync with
 Waypoint. Common tweaks:
 
-- **Change your coverage threshold, WCAG scope, or quality-report cadence** — edit
+- **Change your coverage thresholds or instrumentation plan, WCAG scope, or quality-report cadence** — edit
   `.claude/STANDARDS.md`. Every agent that cares reads it from there, so this is the one place to
   change.
 - **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — easiest done by

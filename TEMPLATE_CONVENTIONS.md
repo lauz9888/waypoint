@@ -18,6 +18,7 @@ when filling a template in, especially for prose sections a placeholder can't ca
 | `{{PKG_EXEC}}`          | Command used to run a package binary directly | `npx`                                       |
 | `{{RUNTIME_VERSION}}`   | Pinned language/runtime version             | `Node 20`                                     |
 | `{{COVERAGE_THRESHOLD}}`| Minimum combined statement-coverage %       | `90`                                          |
+| `{{BRANCH_COVERAGE_THRESHOLD}}` | Minimum combined branch-coverage % | — (throughline predates branch gating; default offered is `90`) |
 | `{{WCAG_TAGS}}`         | Array literal of WCAG conformance tags scanned | `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']` |
 | `{{RELEASE_REPORT_CADENCE}}` | How many successful releases to live between automatic periodic quality reports | `10` |
 
@@ -25,7 +26,9 @@ when filling a template in, especially for prose sections a placeholder can't ca
 
 `{{STACK_FACTS: <layer>}}` marks a prose section a placeholder can't fill mechanically — it
 names a concrete test framework/tool, file-location convention, and run command for one test
-layer (unit, BDD, e2e, Storybook) or for accessibility scanning. The generator writes fresh prose here in
+layer (unit, BDD, e2e, Storybook) or for accessibility scanning; `{{STACK_FACTS: coverage}}` in
+`STANDARDS.md` is the per-layer coverage instrumentation plan (provider, primary/secondary role,
+output path, shared exclusions). The generator writes fresh prose here in
 the same voice and level of detail as the matching "Stack facts" section in
 `examples/throughline/.claude/agents/*.md` (e.g. `unit-test-author.md`'s block names Vitest,
 `*.test.ts`/`*.test.tsx` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the exact
@@ -67,7 +70,8 @@ the file outright rather than leaving an unused agent behind, and drop steps 6/1
   literal. Abstracting the host is real work with no proven second-host demand yet — a
   deliberate v1 scope cut, not an oversight.
 - **The npm script-name contract itself** (`build`, `typecheck`, `lint`, `format`,
-  `format:check`, `dev`, `test:unit`, `test:bdd`, `test:e2e`, `test:coverage:merge`). This is a
+  `format:check`, `dev`, `test:unit`, `test:bdd`, `test:e2e`, `test:coverage:merge` — the last
+  with a fixed output format, defined in `STANDARDS.md`'s "Coverage measurement" section). This is a
   Waypoint convention every adopting project commits to, independent of which tool implements
   each script — only the tool behind each name and how it's invoked (`{{PKG_MANAGER}}`/
   `{{PKG_EXEC}}`) varies.

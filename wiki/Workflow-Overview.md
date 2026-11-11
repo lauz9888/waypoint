@@ -123,7 +123,7 @@ tests directly — it spawns these subagents and acts on their `STATUS:` reports
 | `e2e-test-author` | Same, for full end-to-end specs. |
 | `implementer` | Turns the approved design into working code, scoped to making the red tests green — no unrequested refactors. |
 | `bug-fixer` | Given one concrete failure and one reproduce command, fixes the root cause. Invoked repeatedly by every bug-fix loop in the pipeline. |
-| `qa-reviewer` | The last check before merge: code quality, testability, security hygiene, accessibility, and the combined coverage gate. Makes small fixes directly; escalates the rest. |
+| `qa-reviewer` | The last check before merge: code quality, testability, security hygiene, accessibility, and the combined statement + branch coverage gate — after checking the figure is valid (blocking) and investigating anything merely suspicious (non-blocking), not just that it's above threshold. Makes small fixes directly; escalates the rest. |
 | `docs-updater` | Reconciles README and the wiki against what actually merged and deployed — checked against current state, not just the diff. |
 | `report-generator` | Compiles the post-change report: requirements, solution, test changes, bugs raised/resolved, total time (including human wait time). |
 | `quality-reporter` | Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption) reports across every completed run: release velocity, defect density, shift-left analysis, requirement delivery time, coverage trend, and bug-fix churn. Runs automatically every so often, or on demand. |
@@ -178,7 +178,8 @@ finds the incomplete run and picks up exactly where it left off.
 ### Periodic quality reporting
 
 Every completed run's `report-generator` step writes a small machine-readable metrics block into
-its report (tracking issue, elapsed time, combined coverage %, and a count of bugs raised at each
+its report (tracking issue, elapsed time, combined statement and branch coverage %, the coverage
+method version, and a count of bugs raised at each
 pipeline stage) alongside the human-readable summary — that block is the raw data source for
 everything below. A separate agent, `quality-reporter`, reads every one of those blocks across
 `reports/*.md` (which *is* the project's release log — one file per completed, deployed change)
@@ -201,7 +202,7 @@ Both cover the same six metrics, computed per bucket:
 | **Defect density** | Bugs raised per release in that period — is each release getting cleaner or messier over time? |
 | **Shift-left histogram** | Which pipeline stage caught each defect, in order from `requirement` through `cd` — with an explicit **post-merge delivery-failure rate**, the share labeled `cd`. This is the headline number: it answers "are we catching problems earlier or later?" It's also why CD failures get their own `cd` label distinct from pre-merge `ci` failures — Step 18 catches things before merge, Step 19 only catches things after the change already merged. Note what `cd` does *not* claim: it means the CD workflow itself failed after merge (build/package/auth/upload/deploy), not that a confirmed defect reached a live user — a `cd` failure often means the previous version stayed live and nothing new shipped. `security`/`accessibility` labels are a separate, informational classification layered on top of a stage label, never counted as their own row here — an issue is counted once, under its stage. |
 | **Average requirement delivery time** | Mean hours from requirements kickoff to CD-live, across that period's releases. |
-| **Coverage trend** | Mean combined test coverage % across that period's releases. |
+| **Coverage trend** | Mean combined statement and branch coverage % across that period's releases. Releases measured under different coverage methods are never averaged together — a measurement fix shows as a series break, not as an improvement or regression. |
 | **Bug-fix churn** | Mean bugs raised per release — the same numerator as defect density, but tracked as its own row so a churn spike is visible even in a period where release count also moved. |
 
 Each report also closes with a plain-language comparison of the most recent bucket against the

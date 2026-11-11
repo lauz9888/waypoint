@@ -47,6 +47,17 @@ Read what already tells you the stack, rather than asking for everything:
 5. Build config (`vite.config.*`, or equivalent) for a non-root base path / static-host deploy
    flag, if any.
 6. Existing `README.md` for a one-line description usable as `{{APP_STACK_SUMMARY}}`.
+7. **Coverage tooling, per layer** — the inputs to `STANDARDS.md`'s instrumentation plan (its
+   "Coverage measurement" section). Look for: coverage providers in `devDependencies`
+   (`@vitest/coverage-v8`, `@vitest/coverage-istanbul`, `nyc`, `c8`, `babel-plugin-istanbul`,
+   `vite-plugin-istanbul`, `@cypress/code-coverage`, `v8-to-istanbul`, `istanbul-lib-*`); `coverage`
+   config in the unit runner's config (provider, `include`/`exclude`, reporters, output dir); how
+   the e2e layer collects coverage, if at all (Playwright `page.coverage`, `window.__coverage__`, a
+   `COVERAGE` env flag in the build config, `build.sourcemap`); and whether a
+   `test:coverage:merge` script (and a merge script behind it) already exists. Note any known trap
+   you find — V8/`page.coverage` coverage converted over a minified production bundle, providers
+   of different kinds whose maps are merged raw with `CoverageMap.merge`, instrumentation that
+   would also apply to the normal production build — so Step 4 can raise it.
 
 ## Step 4 — Confirm with the user
 
@@ -71,12 +82,31 @@ wrong values here propagate into every generated agent file.
    name, `{{APP_STACK_SUMMARY}}` (one line), unit/e2e framework names if undetected (plus BDD's
    and Storybook's, if those layers are on), the accessibility-scanning tool for each layer if undetected,
    `{{RUNTIME_VERSION}}` if undetected, `{{COVERAGE_THRESHOLD}}` (offer 90 as the default Waypoint
-   ships with, per `examples/throughline`), `{{WCAG_TAGS}}` (offer
+   ships with, per `examples/throughline`), `{{BRANCH_COVERAGE_THRESHOLD}}` (offer 90 as the default
+   — the value Waypoint's most recent adopter gates on; offer a lower floor such as 80 if the
+   project already measures branches and sits well below 90, with a note to ratchet it up rather
+   than fail every run from day one), `{{WCAG_TAGS}}` (offer
    `['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']` as the default — WCAG 2.1 AA — and ask if the
    project needs a different conformance level), and `{{RELEASE_REPORT_CADENCE}}` (offer 10 as the
    default — how many successful releases to live between automatic `quality-reporter` rollups;
    it can always be triggered early by hand via `/quality-report` regardless of this number).
-3. Don't ask about GitHub-as-VCS or the npm-style script-name contract — both are fixed for this
+3. **Coverage instrumentation plan** — present what Step 3.7 found as a per-layer table
+   (layer → provider → primary/secondary → output path), with Waypoint's defaults filled in where
+   nothing exists yet: unit (plus Storybook, if on) is primary via the unit runner's own coverage
+   provider; BDD is secondary via an Istanbul wrapper around its runner; e2e is secondary via a
+   coverage-only, Istanbul-instrumented build (gated on a `COVERAGE=true` env flag so the normal
+   build is untouched), never V8 coverage over the minified production bundle. Primary layers seed
+   the canonical inventory but don't define it — the merge must still verify it against a disk
+   enumeration of the source root and reconcile secondary-only items — so note whether each
+   primary provider is configured to report files no test imports. Ask the user to
+   confirm or correct it, and to confirm the **coverage exclusions** — the source root, plus files
+   no layer should count (bootstrap entry files such as `src/main.ts`, stories, generated code) —
+   as one shared list. Start the plan's "Known secondary-only artefact classes" list empty unless
+   the project's existing merge script or docs already demonstrate one with concrete evidence —
+   an exclusion someone assumed is harmless isn't evidence. Flag every trap Step 3.7 found explicitly; if `test:coverage:merge` already
+   exists and does something the plan forbids, say the first `/ship-feature` should be fixing it
+   (Step 6.4 will measure it).
+4. Don't ask about GitHub-as-VCS or the npm-style script-name contract — both are fixed for this
    version of Waypoint (see `TEMPLATE_CONVENTIONS.md`'s "Not templatized" section); note this to
    the user rather than presenting it as a choice.
 
@@ -99,6 +129,9 @@ For each template file at the source, produce the target project's concrete vers
      throughline version cites `src/app.test.ts`; if the target repo has no tests at this layer
      yet, phrase it as establishing the pattern in the first test file, mirroring how the
      throughline agents themselves say "if none exist yet, establish a convention and note it."
+   - The `{{STACK_FACTS: coverage}}` block in `STANDARDS.md` has no throughline counterpart (it
+     predates it); write it from the instrumentation plan and exclusions confirmed in Step 4.3,
+     following the `<!-- Generator note -->` directly above the block for structure.
    - Resolve every `<!-- WAYPOINT:OPTIONAL:<layer> -->...<!-- WAYPOINT:END -->` block: if the
      project has that layer on, keep the content and delete just the two marker lines; if off,
      delete the entire block including its content.
@@ -150,6 +183,19 @@ Before reporting success:
    for `Step [0-9]` too — frontmatter descriptions carry step references independently of
    `ship-feature/SKILL.md` and are easy to miss (see Step 5's note).
 
+4. **Coverage baseline**, only if `test:coverage:merge` already exists: run it once (it may take
+   a while — run it in the background) and apply `STANDARDS.md`'s "Validity checks" and
+   "Investigation signals" to each layer's `coverage/<layer>/coverage-final.json` and the output,
+   the same way `qa-reviewer` does — including enumerating the source root on disk yourself and
+   checking every in-scope file is in whatever inventory the existing script produces (an
+   existing script that doesn't verify its inventory at all is itself a finding). Don't edit the
+   project's code or tests to fix anything here — init only generates the pipeline. Record the
+   outcome for Step 7 in three groups: the statement and branch figures as printed (or "branches
+   not reported"); validity failures, each with its objective evidence; and investigation
+   signals, each marked explained or unresolved. If a layer fails its command for environmental
+   reasons (no browser installed, no database), say so rather than treating it as a validity
+   failure.
+
 Fix anything wrong before finishing; don't hand the user a pipeline with template syntax or a
 dangling/incorrect step reference still in it.
 
@@ -157,7 +203,13 @@ dangling/incorrect step reference still in it.
 
 Tell the user what was created (file list — including `quality-reporter.md` and
 `quality-report/SKILL.md`), which optional layers are on/off and why, the confirmed
-`{{RELEASE_REPORT_CADENCE}}`, and that `/ship-feature <change request>` is now ready to use (and
+`{{RELEASE_REPORT_CADENCE}}`, the confirmed coverage thresholds and instrumentation plan, the
+Step 6.4 coverage baseline (if run), and that `/ship-feature <change request>` is now ready to use (and
 `/quality-report` for an on-demand rollup any time, without waiting for the cadence). Suggest
 committing the generated `.claude/`/`docs/adr/` files as a first commit before running the
-pipeline for real.
+pipeline for real. If the baseline failed any validity check, or `test:coverage:merge`
+doesn't exist yet, recommend that the first `/ship-feature` run be the measurement change itself
+(e.g. `/ship-feature make test:coverage:merge meet STANDARDS.md's coverage measurement section`)
+— its requirements will carry the calibration requirements — so that every later change is gated
+on a real figure, not one that only looks real. Unresolved signals alone don't warrant that —
+list them as worth a look, not as blockers.
