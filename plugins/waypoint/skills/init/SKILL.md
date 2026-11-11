@@ -14,7 +14,9 @@ and the optional-layer rule.
 Your templates are in `${CLAUDE_PLUGIN_ROOT}/templates/`: `config.json` (the config's shape and
 defaults), `stack.md` (the stack-facts sections, each with a `<!-- Generator: -->` comment saying
 what goes in it), `stack.example.md` (a real project's filled-in `stack.md`, the model for voice and
-level of detail), and `adr-README.md`.
+level of detail), and `adr-README.md`. `stack.example.md` is throughline's: its file paths, module
+names, script names and coverage artefact classes are that project's, never defaults for this one —
+copy its shape and its level of detail, and take every fact from this repo.
 
 Like `requirements-analyst`, ground every decision in the target repo's actual state before asking
 the user anything — inspecting the codebase is cheap, a wrong assumption baked into `.waypoint/` is
@@ -34,7 +36,10 @@ not.
    existing answers: older copies hold the project name, thresholds, WCAG tags, cadence and runtime
    version inline (in `STANDARDS.md`), and each test-author agent's "Stack facts" section holds the
    stack prose `stack.md` needs — read them in Step 2 and carry their content over rather than
-   re-deriving it. Remember the file list for Step 4.
+   re-deriving it. Remember the file list for Step 4. Where an old copy disagrees with the repo
+   itself — a runtime version that doesn't match `engines`, `.nvmrc` or the CI workflow's
+   `node-version`, a test path that no longer exists — the repo wins: old copies were written by
+   hand and drift. Note each such disagreement for the Step 6 report.
 
 ## Step 2 — Inspect the target project
 
@@ -74,8 +79,17 @@ Read what already tells you the stack, rather than asking for everything:
 Show what you detected and get explicit confirmation/correction rather than assuming silently —
 wrong values here reach every agent that reads `.waypoint/`.
 
-1. `AskUserQuestion` (single call, these are genuine either/or decisions):
+1. `AskUserQuestion` (single call, these are genuine either/or decisions; the tool takes at most
+   four questions, so ask exactly these three):
    - **Package manager** — your detected value as the recommended option, plus the other two.
+   - **Optional layers** — one `multiSelect` question whose options are the three layers below,
+     each option's description stating what you detected for it, so the user ticks the layers to
+     turn on (anything unticked is off).
+   - **Share with collaborators** — whether to add the Waypoint marketplace and plugin to the
+     project's committed `.claude/settings.json` (Step 4.5), so anyone who clones the repo and
+     trusts the folder is offered the plugin. Recommend yes for a team repo.
+
+   The three layers:
    - **BDD layer** — on/off. Explain the tradeoff briefly (a separate Gherkin/behavioral layer
      between unit and e2e vs. unit+e2e only) if nothing in the repo already signals an answer
      (e.g. an existing `features/` directory or `@cucumber/cucumber` dependency settles it —
@@ -88,9 +102,6 @@ wrong values here reach every agent that reads `.waypoint/`.
      `unit-test-author` alongside unit tests, with its own full-suite step (Step 11a) and CI job.
      Only meaningful for a project with a UI component library; an existing `.storybook/`
      directory or `storybook` dependency settles it — state your detection and ask them to confirm.
-   - **Share with collaborators** — whether to add the Waypoint marketplace and plugin to the
-     project's committed `.claude/settings.json` (Step 4.5), so anyone who clones the repo and
-     trusts the folder is offered the plugin. Recommend yes for a team repo.
 2. Plain conversation for anything Step 2 couldn't resolve or that needs a human call: project
    name, `project.summary` (one line), unit/e2e framework names if undetected (plus BDD's and
    Storybook's, if those layers are on), the accessibility-scanning tool for each layer if
@@ -120,8 +131,12 @@ wrong values here reach every agent that reads `.waypoint/`.
 4. **Older copied-in pipeline**, if Step 1.2 found one: list the files and ask
    (`AskUserQuestion`: remove them / keep them). Recommend removing — the plugin replaces them, and
    keeping them leaves a second, unprefixed `/ship-feature` and set of agents that won't get
-   Waypoint updates. Mention any of them that look hand-edited (content the plugin's versions don't
-   have), so the user can decide whether to carry that into `.waypoint/stack.md` first.
+   Waypoint updates. Don't diff whole files against the plugin's versions — the plugin has been
+   reworded since, so that's mostly noise. Project-specific content lives in a few known places:
+   each test-author agent's "Stack facts" section, and `STANDARDS.md`'s coverage instrumentation
+   plan, exclusions and known secondary-only artefact classes. Check those, and tell the user
+   anything there that your `.waypoint/stack.md` draft doesn't yet carry, so they can decide
+   whether to keep it before the copies go.
 5. Don't ask about GitHub-as-VCS or the npm-style script-name contract — both are fixed in this
    version of Waypoint; note this to the user rather than presenting it as a choice.
 
@@ -139,7 +154,10 @@ wrong values here reach every agent that reads `.waypoint/`.
    the confirmed framework/tool in place of Vitest/Cucumber/Playwright/jest-axe/`@axe-core`. If
    Step 2 found a concrete existing usage example in the target repo, cite it by file path the way
    the example cites `src/app.test.ts`; if the target repo has no tests at a layer yet, say the
-   first test file there establishes the pattern. Write the `coverage` section from the
+   first test file there establishes the pattern. In each accessibility bullet, say where the
+   test code keeps the WCAG tags — one shared module, or a constant declared in each file — by
+   what the repo actually does (see `STANDARDS.md`'s "WCAG conformance scope"); if no test scans
+   yet, say to keep them in one shared place. Write the `coverage` section from the
    instrumentation plan and exclusions confirmed in Step 3.3. Then delete the generator comments.
 3. **`docs/adr/README.md`**: copy `${CLAUDE_PLUGIN_ROOT}/templates/adr-README.md` there verbatim,
    unless the project already has one (then leave it alone).
@@ -151,7 +169,14 @@ wrong values here reach every agent that reads `.waypoint/`.
    `"extraKnownMarketplaces": {"waypoint": {"source": {"source": "github", "repo": "lauz9888/waypoint"}}}`
    and `"enabledPlugins": {"waypoint@waypoint": true}`.
 6. **Older copied-in pipeline**: if the user chose to remove it in Step 3.4, delete exactly the
-   files Step 1.2 listed — nothing else under `.claude/`.
+   files Step 1.2 listed — nothing else under `.claude/`. Then `Grep` the rest of the repo
+   (excluding `.git/`, `node_modules/`, `.workflow/` and `.waypoint/`) for references the removal
+   left dangling: `.claude/STANDARDS.md`, `.claude/agents/`, `.claude/skills/`, and the unprefixed
+   `/ship-feature` and `/quality-report` commands (now `/waypoint:ship-feature` and
+   `/waypoint:quality-report`). Typical hits are CI workflow comments, README, code comments in
+   coverage scripts and tests, Storybook config, and ADRs. Don't edit them — list each as
+   `file:line` with what it should point to now (the plugin's `STANDARDS.md` section by name,
+   `.waypoint/config.json`/`stack.md`, or the prefixed command) for the Step 6 report.
 
 ## Step 5 — Validate
 
@@ -162,8 +187,14 @@ Before reporting success:
    `.waypoint/stack.md` has a filled-in section for `test-frameworks`, `unit-test`, `e2e-test` and
    `coverage`, plus `bdd-test`/`storybook-test` exactly when those layers are on, with no
    `<!-- Generator` comment left in it.
-2. **Coverage baseline**, only if `test:coverage:merge` already exists: run it once (it may take a
-   while — run it in the background) and apply the "Validity checks" and "Investigation signals"
+2. **Coverage baseline**, only if `test:coverage:merge` already exists. It runs every enabled
+   layer's suite, so it needs the project's dependencies installed and whatever the layers need at
+   run time — e2e and Storybook browsers (e.g. Playwright's Chromium), a database. If they aren't
+   there (no `node_modules`, as in a fresh clone or a new worktree), don't install anything on your
+   own: ask (`AskUserQuestion`: install and run — `<pm> ci` or the lockfile's equivalent, plus any
+   browser install the scripts don't already do / skip the baseline). If skipped, record "baseline
+   not run" and why for Step 6, and go on. Otherwise run it once (it may take a while — run it in
+   the background) and apply the "Validity checks" and "Investigation signals"
    in `${CLAUDE_PLUGIN_ROOT}/STANDARDS.md` to each layer's `coverage/<layer>/coverage-final.json`
    and the output, the same way `qa-reviewer` does — including enumerating the source root on disk
    yourself and checking every in-scope file is in whatever inventory the existing script produces
@@ -180,7 +211,9 @@ Fix anything wrong in the files you wrote before finishing.
 
 Tell the user what was written (file list), which optional layers are on/off and why, the confirmed
 `releaseReportCadence`, the confirmed coverage thresholds and instrumentation plan, the Step 5.2
-coverage baseline (if run), whether an older copied-in pipeline was removed or kept, and that
+coverage baseline (or that it wasn't run, and why), whether an older copied-in pipeline was removed
+or kept — with every place an old copy disagreed with the repo (Step 1.2) and every dangling
+reference Step 4.6 found, recommending a follow-up commit that repoints them — and that
 `/waypoint:ship-feature <change request>` is now ready to use (and `/waypoint:quality-report` for an
 on-demand rollup any time, without waiting for the cadence). Suggest committing `.waypoint/`,
 `docs/adr/`, `.gitignore` and any `.claude/` changes as a first commit before running the pipeline

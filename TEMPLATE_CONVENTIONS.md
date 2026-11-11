@@ -32,13 +32,13 @@ from `.waypoint/config.json`" — and never repeat its value.
 | ---------------------- | ------------------------------------------- | --------------------------------------------- |
 | `schemaVersion`        | Version of this file's shape                | `1`                                           |
 | `project.name`         | The adopting repo's name                    | `throughline`                                 |
-| `project.summary`      | One-line description of the app and its deploy target | "a Vite-built PWA, deployed to GitHub Pages" |
+| `project.summary`      | One-line description of the app and its deploy target | "A Vite-built PWA deployed to GitHub Pages under /throughline/" |
 | `packageManager`       | Command used to run package scripts — written `<pm>` in template commands | `npm`                  |
 | `packageExec`          | Command used to run a package binary directly — written `<pm-exec>` | `npx`                       |
-| `runtimeVersion`       | Pinned language/runtime version             | `Node 20`                                     |
-| `layers`               | Which optional layers are on (see below)    | `BDD` and `STATIC_SPA_DEPLOY` on, `STORYBOOK` off |
+| `runtimeVersion`       | Pinned language/runtime version             | `Node 22`                                     |
+| `layers`               | Which optional layers are on (see below)    | `BDD`, `STATIC_SPA_DEPLOY` and `STORYBOOK` all on |
 | `coverage.statements`  | Minimum combined statement-coverage %       | `90`                                          |
-| `coverage.branches`    | Minimum combined branch-coverage %          | `90` (throughline predates branch gating; this is the default offered) |
+| `coverage.branches`    | Minimum combined branch-coverage %          | `90`                                          |
 | `wcagTags`             | WCAG conformance tags every automated scan is scoped to | `["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]` |
 | `releaseReportCadence` | How many successful releases to live between automatic periodic quality reports | `10` |
 
@@ -53,7 +53,7 @@ sections up by heading, so the headings are fixed; a disabled layer's section is
 `/waypoint:init` writes it from `plugins/waypoint/templates/stack.md`'s generator comments, in the
 voice and level of detail of `templates/stack.example.md` — a copy of
 `examples/throughline/.waypoint/stack.md`, kept identical by the tests (e.g. its `unit-test` section names
-Vitest, `*.test.ts`/`*.test.tsx` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the
+Vitest, the `src/<module>.test.ts` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the
 exact `axe()` call pattern).
 
 ## Optional layers
