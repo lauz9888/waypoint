@@ -121,13 +121,15 @@ Here's what to expect, in order:
    background. You're not asked to approve this step — a dedicated reviewer agent is the check —
    but you'll see it happen.
 3. **Tests, written red.** Unit (and BDD/e2e/Storybook, per your enabled layers) tests get written for
-   behavior that doesn't exist yet, and confirmed to fail for the right reason.
+   behavior that doesn't exist yet, each tagged with the requirement it verifies, and confirmed to
+   fail for the right reason. Implementation doesn't start until every requirement has a test.
 4. **Implementation.** Code gets written to the approved design and requirements — the red tests
    are immediate, executable evidence it got there, not the whole definition of "done" — while
    staying scoped to what the design actually describes.
 5. **Full suites + auto-fixing.** Every test suite runs in full; any failure becomes a GitHub issue
    and gets fixed automatically, looping until green.
-6. **Quality gates.** A QA review checks code quality, security hygiene, accessibility, and
+6. **Quality gates.** A QA review traces every requirement to the code and test that satisfy it,
+   and checks code quality, security hygiene, accessibility, and
    combined statement and branch coverage against your thresholds — after first checking the
    figure is valid: no double counting across layers, no non-code lines counted, and every source
    file actually in the count (checked against the files on disk, not just whatever the test

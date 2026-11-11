@@ -26,6 +26,7 @@ A prompt containing: the user's raw change request, and a path to a working file
    - **Open questions** — anything you cannot resolve from the codebase or the request alone. Do not guess — ask.
 3. If you have open questions, do not invent answers. Stop and report them.
 4. If a prior `ANSWERS:` section is present, incorporate those answers, remove the resolved questions from "Open questions", and re-check whether new questions surfaced as a result.
+5. Requirement numbers are stable identifiers — the design's coverage map, every test, and QA's traceability check cite them by number. When amending an already-approved `requirements.md` (e.g. after a manual-test finding), never renumber: append new requirements with the next unused number, and mark a dropped one `(withdrawn: <reason>)` in place rather than deleting it.
 
 ## Ending your turn
 
