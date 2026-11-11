@@ -94,7 +94,7 @@ below. The 22 steps fall into eight phases:
 | **5. Implementation (green)** | 8 | The implementer builds to the approved design and requirements — the red tests are immediate, executable evidence it got there, not the complete definition of done — while staying scoped to what the design describes. |
 | **6. Full suites + bug loops** | 9–11 (+ 11a with Storybook) | Each full test suite runs; any failure is filed as a GitHub issue and fixed in a loop until green. |
 | **7. Quality gates** | 12–14 | QA review (two-way requirements trace, change-impact scope, assertion effectiveness, residual risks) + combined coverage gate, an optional pre-merge base-path smoke check, then manual testing — the second human gate, informed by an assurance summary and with the decision recorded either way. |
-| **8. Ship** | 15–22 | Merge, CI/CD (watched, with an autonomous CI bug-fix loop; CD failures are logged, not auto-fixed, and the release is recorded as merged-but-not-live rather than shipped), then docs reconciliation, the post-change report, and the release counter/metrics land together as one reviewed housekeeping PR (not direct pushes to `main`) before cleanup. |
+| **8. Ship** | 15–22 | Merge, CI/CD (watched, with an autonomous CI bug-fix loop; CD failures are logged, not auto-fixed, and the release is recorded as merged-but-not-live rather than shipped), then docs reconciliation, the post-change report, and the release metrics land together as one reviewed housekeeping PR (not direct pushes to `main`) before cleanup. Before merging, the branch is synced with the latest `main`, and every check must pass on that exact commit; any change made after QA approved (a CI fix, a manual-test fix, a conflict resolution) is re-reviewed by QA first. |
 
 #### The flow
 
@@ -113,7 +113,7 @@ flowchart TD
     K --> L["CI / CD"]
     L --> M["CI bug-fix loop\n(autonomous)"]
     M --> N["CD failure logging\n(not auto-fixed)"]
-    N --> O["Docs + report + release counter\non one housekeeping PR"]
+    N --> O["Docs + report + release metrics\non one housekeeping PR"]
     O --> P["Auto-merge housekeeping PR\n(watch for a redeploy it triggers)"]
     P --> Q(["Cleanup"])
 
@@ -180,18 +180,42 @@ Accessibility scanning is *not* optional either, but for the opposite reason: Wa
 premise is a workflow for web app development, so WCAG conformance is treated as baseline, like a
 functional requirement, not a layer a project can decline.
 
+### Gates the orchestrator verifies
+
+Most of the pipeline is instructions the orchestrator follows. A few conditions matter too much to
+leave to that: before the step each one guards, the orchestrator **checks** it against recorded
+evidence (a document hash, a commit SHA, a `gh` result) and records the result. It doesn't
+proceed until the check passes:
+
+| Gate | Guards | Checks |
+|---|---|---|
+| G1 | Branching, implementation, opening the PR | The requirements are still the version you approved, and the design is still the version the reviewer approved (by file hash). |
+| G2 | Implementation | Every requirement and every test-guarded risk has a planned covering test, and every new test has a purpose. |
+| G3 | Opening the PR, merging | Every commit that changed a test was either a test author's or passed an independent test-expectation review. |
+| G4 | Manual testing, merging | QA's approval is for the code as it is *now*. Any later change to the feature's diff — a CI fix, a manual-test fix, resolving a conflict with `main` — means QA revalidates it first. |
+| G5 | Merging | The branch contains the latest `main`, and every check on the PR, not just the ones branch protection marks required, passed on the exact commit being merged. Waypoint doesn't assume the repo has branch protection set up. |
+| G6 | Recording a deployment | The CD run being reported is for the merged commit and actually succeeded. |
+| G7 | Marking the run finished | Nothing the run still owes is unrecorded. A run whose housekeeping PR hasn't merged, or whose CD failure is still open, is marked *delivered with pending actions* rather than complete. |
+
+A recorded pass only covers the version it was checked against. If anything has moved since, or
+the run is being resumed, the gate is checked again.
+
 ### How a run stays resumable
 
 Every `/waypoint:ship-feature` run keeps its state in `.workflow/<slug>/` — gitignored, local scratch, never
 part of the PR:
 
 - `requirements.md`, `design.md` — the working documents.
-- `state.md` — current step, branch name, tracking issue number, per-layer test file lists, open
-  bug issue numbers. Updated after every step.
+- `state.md` — current step and status, branch name, tracking issue number, per-layer test file
+  lists, open bug issue numbers, the evidence the gates check (approved hashes and SHAs), and any
+  pending actions. Updated after every step.
 - `meta.json` — when the run started, for the final report's duration metric.
 
 If you close Claude Code mid-run and come back, invoking `/waypoint:ship-feature` again with no new request
-finds the incomplete run and picks up exactly where it left off.
+finds the incomplete run, re-checks the gates guarding the step it stopped at, and picks up from
+there. A run that shipped its feature but still has pending actions, such as a housekeeping PR
+waiting for a manual merge, is listed the next time you invoke `/waypoint:ship-feature`. With no
+new request, the pending actions are followed up and the run is closed once they're all done.
 
 ### Periodic quality reporting
 
@@ -235,11 +259,13 @@ plainly instead of drawing a trend line through one data point.
 
 #### When it's triggered automatically
 
-Every successful release counts: each time a change merges and its CD deploy to `main`/live
-succeeds (Step 19), a small committed counter — `reports/.release-count` — is incremented by 1
-(Step 21a). The moment that counter is an exact multiple of the configured cadence — **10 by
-default**, e.g. every 10th release — `quality-reporter` runs automatically, right there in the
-same pipeline run that tripped the milestone, and the two new report paths (plus a one-line
+Every successful release counts. There's no counter file: the release count is the number of
+post-change reports in `reports/` whose change actually went live (Step 21a). Each run adds its own
+report rather than incrementing a shared number, so two runs that deploy at the same time can't
+lose each other's release. When the count passes a multiple of the configured cadence — **10 by
+default**, e.g. every 10th release — that no periodic report covers yet, `quality-reporter` runs
+automatically. It runs in the same pipeline run that reached the milestone (or the next one, if two
+concurrent runs each narrowly missed it), and the two new report paths (plus a one-line
 headline summary) are folded into that run's final summary to you. No separate action needed.
 
 The cadence is `releaseReportCadence` in your project's `.waypoint/config.json` — change it there

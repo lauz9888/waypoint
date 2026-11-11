@@ -160,19 +160,24 @@ Here's what to expect, in order:
    right and move on.
 8. **Merge and ship.** The branch merges via PR, CI/CD run and are watched automatically (CI
    failures are auto-fixed and retried; a CD failure is logged for you, not auto-fixed, and the
-   change is recorded as merged-but-not-live rather than shipped). Docs get reconciled against what
+   change is recorded as merged-but-not-live rather than shipped). Green CI alone doesn't merge
+   it: the branch is first brought up to date with `main`, every check has to pass on that exact
+   commit, and anything changed after QA approved is re-reviewed by QA first. Docs get reconciled against what
    actually shipped, and a report lands in `reports/` leading with that assurance summary, then
    requirement-level assurance, residual risks, solution, every bug raised and how it was
    resolved, and total time taken — both land together as one small
    housekeeping PR (not a direct push to `main`), which auto-merges if your repo allows it or waits
-   for you to merge it by hand otherwise.
+   for you to merge it by hand otherwise. Until it merges, the run is recorded as *delivered with
+   pending actions*, not complete.
 
 A run can take anywhere from minutes to a couple of hours depending on how much back-and-forth
 happens at the two human gates and how many bug-fix cycles are needed — the final report's time
 total includes that human wait time explicitly, so it isn't mistaken for pure engineering effort.
 
 If you close Claude Code partway through, just run `/waypoint:ship-feature` again later with no new
-request — it'll find the in-progress run and resume from where it left off.
+request — it'll find the in-progress run, re-check the gates for the step it stopped at, and resume
+from there. The same command also follows up a finished run's pending actions, such as a
+housekeeping PR that was waiting for you to merge it.
 
 ## Periodic quality reports
 
