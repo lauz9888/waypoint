@@ -121,15 +121,19 @@ Here's what to expect, in order:
    background. You're not asked to approve this step — a dedicated reviewer agent is the check —
    but you'll see it happen.
 3. **Tests, written red.** Unit (and BDD/e2e/Storybook, per your enabled layers) tests get written for
-   behavior that doesn't exist yet, each tagged with the requirement it verifies, and confirmed to
-   fail for the right reason. Implementation doesn't start until every requirement has a test.
+   behavior that doesn't exist yet, each tagged with its purpose (a requirement, a documented risk,
+   or a regression) and covering the relevant negative and boundary cases, and confirmed to fail for
+   the right reason. Implementation doesn't start until every requirement has a test. If an agent
+   finds your requirements ambiguous along the way, it asks rather than guessing — you're only
+   brought back in when the answer would change what the software visibly does.
 4. **Implementation.** Code gets written to the approved design and requirements — the red tests
    are immediate, executable evidence it got there, not the whole definition of "done" — while
    staying scoped to what the design actually describes.
 5. **Full suites + auto-fixing.** Every test suite runs in full; any failure becomes a GitHub issue
    and gets fixed automatically, looping until green.
 6. **Quality gates.** A QA review traces every requirement to the code and test that satisfy it,
-   and checks code quality, security hygiene, accessibility, and
+   challenges whether the tests would actually catch a plausible wrong implementation, lists any
+   significant risks left unresolved, and checks code quality, security hygiene, accessibility, and
    combined statement and branch coverage against your thresholds — after first checking the
    figure is valid: no double counting across layers, no non-code lines counted, and every source
    file actually in the count (checked against the files on disk, not just whatever the test
@@ -138,7 +142,9 @@ Here's what to expect, in order:
    every line in a file hit exactly once) is investigated, and if it can't be explained it's
    filed as a non-blocking `coverage-investigation` issue rather than stopping your change.
 7. **Manual testing.** The app starts locally and **you're given a URL to test yourself** — the
-   second and last point you're asked to act. If something's wrong, it gets classified before
+   second and last point you're asked to act. You're shown an assurance summary first (coverage,
+   requirements verified, unresolved risks) so you know where to focus, and your decision is
+   recorded either way — what you tested, or why you skipped it. If something's wrong, it gets classified before
    routing — an implementation defect goes to bug-fixing and re-test as you'd expect, but a wrong
    or missing test, a design gap, or a requirement that turns out to be wrong route differently
    (the last one reopens requirements approval rather than being force-fit as a "bug"). You may be
@@ -147,8 +153,9 @@ Here's what to expect, in order:
 8. **Merge and ship.** The branch merges via PR, CI/CD run and are watched automatically (CI
    failures are auto-fixed and retried; a CD failure is logged for you, not auto-fixed, and the
    change is recorded as merged-but-not-live rather than shipped). Docs get reconciled against what
-   actually shipped, and a report lands in `reports/` summarizing requirements, solution, every bug
-   raised and how it was resolved, and total time taken — both land together as one small
+   actually shipped, and a report lands in `reports/` leading with that assurance summary, then
+   requirement-level assurance, residual risks, solution, every bug raised and how it was
+   resolved, and total time taken — both land together as one small
    housekeeping PR (not a direct push to `main`), which auto-merges if your repo allows it or waits
    for you to merge it by hand otherwise.
 
@@ -233,7 +240,9 @@ github.com) — the pipeline needs `origin` configured and `gh` authenticated ag
 first `/ship-feature` run, specifically at the branch-push and PR-creation steps.
 
 **"Can I skip the manual test gate?"** Yes — when asked, tell it testing isn't needed for this
-change. It's a gate you can waive per run, not a hard requirement.
+change. It's a gate you can waive per run, not a hard requirement. You'll be asked for a one-line
+reason, which goes in the run's report so you can later see which kinds of change manual testing
+actually catches problems in.
 
 **"A loop hit its retry cap and stopped."** Every loop in the pipeline (design review, red/green
 cycles, QA, manual-test, CI) is capped at 5 iterations specifically so it doesn't spin forever on

@@ -38,12 +38,23 @@ the mechanics below happen to work today:
   analyst reads the code before writing requirements; a solution designer reads existing patterns
   before proposing new ones; `waypoint-init` itself inspects a project's `package.json` before
   asking a single question.
-- **Approved requirements are the contract at every stage, not just the first.** Requirement
-  numbers are stable identifiers: the design maps each one to a change and to at least one test,
-  every test is tagged with the requirement(s) it verifies, implementation can't start until every
-  requirement has a covering test, the implementer and `bug-fixer` work with `requirements.md` in
-  hand (a fix that would contradict a requirement is escalated, not applied), and QA blocks on any
-  requirement that isn't both implemented and test-verified.
+- **Approved requirements are the authority on intended behavior, at every stage.** Each
+  requirement has a stable ID (`REQ-007`), acceptance criteria, and expected behavior for its
+  relevant failure conditions. Traceability runs both ways: every requirement has a test whose
+  assertions would catch it being wrong, and every new or changed test states its purpose — a
+  requirement, a documented risk (`RISK-02`), or a regression — so both missing coverage and
+  purposeless tests show up. A per-run traceability record ties them together.
+- **Agents never invent business rules.** An implementer, test author, or bug-fixer that finds the
+  requirements ambiguous or insufficient raises a structured clarification instead. Only a
+  *material* one — it changes behavior a user, integration, or stored data would observe — reopens
+  requirements approval; technical details are decided and recorded without a human.
+- **A failing test is evidence, not an obstacle.** Bug fixes change the implementation, not the
+  expectation. Any change to an existing test outside the test-writing steps is detected from the
+  commit and independently reviewed; a weakened assertion is reverted.
+- **Coverage is evidence, not the release decision.** QA also asks which plausible wrong
+  implementations would still pass the tests, and lists unresolved significant risks. These are
+  shown side by side with coverage — never folded into a composite score — before manual testing
+  and in the final report.
 - **Tests are written first, and proven to fail for the right reason**, before any implementation
   exists — a red test that fails because of a typo isn't a red test, it's a broken one.
 - **Humans gate exactly two decisions**: what to build (requirements approval) and whether it works
@@ -77,12 +88,12 @@ below. The 22 steps fall into eight phases:
 | Phase | Steps | What happens |
 |---|---|---|
 | **1. Requirements** | 1–2 | The user's request becomes a precise, testable `requirements.md` — the first human gate. |
-| **2. Design** | 3 | A solution design is proposed and reviewed against the requirements until it holds up — no human gate; the reviewer is the check. |
+| **2. Design** | 3 | A solution design — including a change-impact analysis of what existing behavior it could break — is proposed and reviewed against the requirements until it holds up — no human gate; the reviewer is the check. |
 | **3. Branch** | 4 | A feature branch is created. |
-| **4. Test-first (red)** | 5–7 | Unit, BDD, and e2e tests (plus Storybook stories, if that layer is on) are written for behavior that doesn't exist yet, each tagged with the requirement(s) it verifies and confirmed to fail *for the right reason*. Implementation doesn't start until every requirement has at least one covering test. |
+| **4. Test-first (red)** | 5–7 | Unit, BDD, and e2e tests (plus Storybook stories, if that layer is on) are written for behavior that doesn't exist yet, each tagged with its purpose (requirement, risk, or regression), covering the relevant negative and boundary cases, and confirmed to fail *for the right reason*. Implementation doesn't start until every requirement has at least one covering test. |
 | **5. Implementation (green)** | 8 | The implementer builds to the approved design and requirements — the red tests are immediate, executable evidence it got there, not the complete definition of done — while staying scoped to what the design describes. |
 | **6. Full suites + bug loops** | 9–11 (+ 11a with Storybook) | Each full test suite runs; any failure is filed as a GitHub issue and fixed in a loop until green. |
-| **7. Quality gates** | 12–14 | QA review (including tracing every requirement to its implementation and a test) + combined coverage gate, an optional pre-merge base-path smoke check, then manual testing — the second human gate. |
+| **7. Quality gates** | 12–14 | QA review (two-way requirements trace, change-impact scope, assertion effectiveness, residual risks) + combined coverage gate, an optional pre-merge base-path smoke check, then manual testing — the second human gate, informed by an assurance summary and with the decision recorded either way. |
 | **8. Ship** | 15–22 | Merge, CI/CD (watched, with an autonomous CI bug-fix loop; CD failures are logged, not auto-fixed, and the release is recorded as merged-but-not-live rather than shipped), then docs reconciliation, the post-change report, and the release counter/metrics land together as one reviewed housekeeping PR (not direct pushes to `main`) before cleanup. |
 
 #### The flow
@@ -121,17 +132,17 @@ tests directly — it spawns these subagents and acts on their `STATUS:` reports
 
 | Agent | Role |
 |---|---|
-| `requirements-analyst` | Turns a raw request into a numbered, testable `requirements.md`, grounded in the existing codebase. Asks clarifying questions rather than guessing. |
-| `solution-designer` | Proposes file-level changes to satisfy the requirements — coverage map, test impact, accessibility decisions, ADRs where warranted. |
-| `solution-reviewer` | Judges the design against the requirements and codebase — coverage, fit, scope, testability, accessibility — and hands back approve or specific feedback. |
-| `unit-test-author` | Writes unit tests (and, with the Storybook layer, the matching component stories) for behavior that doesn't exist yet and proves they're red for the right reason. Every test is tagged with the requirement number(s) it verifies. |
+| `requirements-analyst` | Turns a raw request into a testable `requirements.md` — stable `REQ-NNN` IDs, acceptance criteria, criticality, and expected behavior for relevant failure conditions — grounded in the existing codebase. Asks clarifying questions rather than guessing. |
+| `solution-designer` | Proposes file-level changes to satisfy the requirements — coverage map, change-impact and regression-risk analysis (`RISK-NN`), test impact including failure modes, accessibility decisions, ADRs where warranted. |
+| `solution-reviewer` | Judges the design against the requirements and codebase — coverage, fit, scope, testability, change impact, accessibility — and challenges the requirements' own completeness. Also spawned fresh to independently review any change to an existing test's expectations during bug fixing. |
+| `unit-test-author` | Writes unit tests (and, with the Storybook layer, the matching component stories) for behavior that doesn't exist yet and proves they're red for the right reason. Assertions come from the requirements' acceptance criteria, negative and boundary cases included; every test is tagged with its purpose. |
 | `bdd-test-author` *(optional layer)* | Same, for a Gherkin/behavioral test layer, if the project has one. |
 | `e2e-test-author` | Same, for full end-to-end specs. |
-| `implementer` | Turns the approved design into working code against the approved requirements, scoped to making the red tests green — no unrequested refactors. A design that contradicts a requirement is escalated, not silently implemented. |
-| `bug-fixer` | Given one concrete failure and one reproduce command, fixes the root cause — checked against `requirements.md`, so a fix that would contradict a requirement is escalated for re-routing (wrong test, design gap, or wrong requirement) instead of applied. Invoked repeatedly by every bug-fix loop in the pipeline. |
-| `qa-reviewer` | The last check before merge: traces every requirement to its implementation and a test that verifies it (any gap, or unrequested scope, blocks), code quality, testability, security hygiene, accessibility, and the combined statement + branch coverage gate — after checking the figure is valid (blocking) and investigating anything merely suspicious (non-blocking), not just that it's above threshold. Makes small fixes directly; escalates the rest. |
+| `implementer` | Turns the approved design into working code against the approved requirements, scoped to making the red tests green — no unrequested refactors. Checks its work against each requirement's acceptance criteria, and raises a clarification rather than inventing a business rule. |
+| `bug-fixer` | Given one concrete failure and one reproduce command, fixes the root cause — in the implementation, preserving the test's intent (any test change is reported and independently reviewed), checked against the requirements, and followed by a check for related regressions. Invoked repeatedly by every bug-fix loop in the pipeline. |
+| `qa-reviewer` | The last check before merge: traces requirements and risks to code and tests in both directions, checks the diff stayed within the change-impact analysis, challenges assertion effectiveness (any gap blocks), lists residual risks, code quality, testability, security hygiene, accessibility, and the combined statement + branch coverage gate — after checking the figure is valid (blocking) and investigating anything merely suspicious (non-blocking), not just that it's above threshold. Makes small fixes directly; escalates the rest. |
 | `docs-updater` | Reconciles README and the wiki against what actually merged and deployed — checked against current state, not just the diff. |
-| `report-generator` | Compiles the post-change report: requirements, solution, test changes, bugs raised/resolved, total time (including human wait time). |
+| `report-generator` | Compiles the post-change report: an assurance summary, requirement-level assurance and residual risks, clarifications, the manual-test decision, solution, test changes, bugs raised/resolved, total time (including human wait time). |
 | `quality-reporter` | Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption) reports across every completed run: release velocity, defect density, shift-left analysis, requirement delivery time, coverage trend, and bug-fix churn. Runs automatically every so often, or on demand. |
 
 ### Optional layers
@@ -305,7 +316,9 @@ visual indicator in the list`.
    existing suite fails; `bug-fixer` is handed that single failure and its reproduce command, fixes
    the root cause (a timing issue, unrelated to priority), and the suite goes green.
 7. **Quality gates.** `qa-reviewer` traces each requirement to the code and test that satisfy it,
-   checks the diff for code quality and security hygiene, confirms
+   asks which plausible wrong implementations would still pass (e.g. a priority that's saved but
+   not reloaded — caught by the e2e test's reload step), checks the diff for code quality and
+   security hygiene, confirms
    the accessibility criterion from step 1 has an automated scan behind it, and checks combined
    coverage against `taskly`'s threshold. Coverage is a point short on the migration's rollback
    path; `qa-reviewer` adds the missing test itself rather than escalating.
