@@ -8,49 +8,49 @@ to understand *why* the pipeline is shaped the way it is first, read the
 
 Before you start, make sure you have:
 
-- **Claude Code**, with the ability to invoke skills (`/command-name`) in your project.
+- **Claude Code**, with plugin support (`/plugin` works in a session).
 - **A git repository for your project** — new or established, doesn't matter. Waypoint scaffolds
   missing pieces (test setup, npm scripts) if your project doesn't have them yet.
 - **A GitHub repository, with the [`gh` CLI](https://cli.github.com/) installed and authenticated**
   (`gh auth status` should show you logged in). The pipeline drives branches, PRs, issues, and
   Actions entirely through `gh` — this is not optional in the current version.
-- **An npm-, pnpm-, or yarn-based JS/TS project.** Waypoint's generated pipeline assumes a
-  package-script contract (`build`, `typecheck`, `lint`, `test:unit`, `test:e2e`,
-  `test:coverage:merge`, etc.) — if some of these scripts don't exist yet, the pipeline creates
-  them as part of your first change, but the project needs to be a `package.json`-based JS/TS
-  project for that to make sense.
-- **A local checkout of this Waypoint repository.** You'll pass its path to the setup skill in
-  Step 2 below.
+- **An npm-, pnpm-, or yarn-based JS/TS project.** The pipeline assumes a package-script contract
+  (`build`, `typecheck`, `lint`, `test:unit`, `test:e2e`, `test:coverage:merge`, etc.) — if some of
+  these scripts don't exist yet, the pipeline creates them as part of your first change, but the
+  project needs to be a `package.json`-based JS/TS project for that to make sense.
 
-## Step 1 — Copy the setup skill into your project
+## Step 1 — Install the plugin
 
-Waypoint's bootstrapper is itself a Claude Code skill, `waypoint-init`, that needs to exist inside
-*your* project before you can invoke it there. Copy its folder over:
+Waypoint is a Claude Code plugin, published from its GitHub repository, which doubles as a plugin
+marketplace. In a Claude Code session, add the marketplace and install the plugin:
 
-```bash
-cp -r /path/to/waypoint/.claude/skills/waypoint-init  your-project/.claude/skills/
+```
+/plugin marketplace add lauz9888/waypoint
+/plugin install waypoint@waypoint
 ```
 
-(On Windows PowerShell: `Copy-Item -Recurse \path\to\waypoint\.claude\skills\waypoint-init your-project\.claude\skills\`.)
-
-That's the only file transfer you do by hand — everything else is generated for you in the next
-step.
+(From a terminal instead: `claude plugin marketplace add lauz9888/waypoint`, then
+`claude plugin install waypoint@waypoint`.) This gives you three skills —
+`/waypoint:init`, `/waypoint:ship-feature` and `/waypoint:quality-report` — and the twelve
+`waypoint:*` subagents the pipeline drives. Nothing is copied into your project: the same plugin
+serves every project you use it in, and updates reach all of them at once.
 
 ## Step 2 — Run the setup skill
 
 From inside your project (with Claude Code open there), run:
 
 ```
-/waypoint-init /path/to/waypoint
+/waypoint:init
 ```
 
-passing the path to your local Waypoint checkout. If you forget the path, the skill will ask for
-it.
+No arguments. If your project was set up with an older version of Waypoint that copied the
+pipeline into `.claude/`, `/waypoint:init` finds those files, reuses what they already say about
+your stack, and offers to remove them.
 
 ## Step 3 — Answer the setup interview
 
-`waypoint-init` reads your project first — `package.json`, your lockfile, any existing test files,
-your README — and only asks about what it can't figure out on its own. Expect two kinds of
+`/waypoint:init` reads your project first — `package.json`, your lockfile, any existing test files,
+your README — and only asks about what it can't figure out on its own. Expect these kinds of
 questions:
 
 1. **A handful of yes/no or multiple-choice questions**, presented together, for things that are
@@ -63,56 +63,61 @@ questions:
      server-rendered or deployed at the root.
    - Whether to enable the **Storybook** layer (component stories run as interaction +
      accessibility tests) — off by default unless it detects Storybook already in use.
+   - Whether to **share the plugin with collaborators** by enabling it in your project's committed
+     `.claude/settings.json` — recommended for a team repo.
 2. **A short conversational back-and-forth** for anything left over: your project's one-line
    description, which test frameworks you use (if not auto-detected), your statement and branch
    coverage thresholds (90% each is the default), and the WCAG conformance level to scan for
    (WCAG 2.1 AA by default).
 3. **Your coverage instrumentation plan** — a per-layer table of which tool measures coverage for
    each test layer, which layer defines the set of statements being counted, and which files are
-   excluded. `waypoint-init` fills in what it detected and proposes safe defaults for the rest
+   excluded. `/waypoint:init` fills in what it detected and proposes safe defaults for the rest
    (for example, measuring e2e coverage from a separate instrumented build rather than the
    minified production bundle, which silently reports every line as covered). If your project
    already has `test:coverage:merge`, it runs it once and tells you whether the figure is valid —
-   and if not, recommends making the measurement fix your first `/ship-feature`.
+   and if not, recommends making the measurement fix your first `/waypoint:ship-feature`.
 
 You don't need to have answers ready in advance — if something's detectable from your repo,
-`waypoint-init` will tell you what it found and just ask you to confirm.
+`/waypoint:init` will tell you what it found and just ask you to confirm.
 
-## Step 4 — Review what was generated
+## Step 4 — Review what was written
 
-`waypoint-init` writes:
+`/waypoint:init` writes only what's specific to your project:
 
 | Path | What it is |
 |---|---|
 | `.waypoint/config.json` | Your project's settings: name and one-line summary, package manager, runtime version, which optional layers are on, coverage thresholds, WCAG tag scope, and quality-report cadence — the one place to change them later. |
-| `.waypoint/stack.md` | Your stack facts in prose: each test layer's framework, file locations, run command and accessibility-scanning pattern, plus how coverage is measured per layer. |
-| `.claude/agents/*.md` | The subagent roster (12 files; `bdd-test-author` is only used if you enabled BDD). They read your settings and stack details from `.waypoint/` while they run, so they're the same files every Waypoint project gets. |
-| `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator. Steps belonging to a layer you didn't enable are marked in the file and skipped when it runs; step numbers never change, so e.g. a run without BDD goes from Step 5 to Step 7. |
-| `.claude/skills/quality-report/SKILL.md` | On-demand trigger for the periodic quality/velocity rollup (see below) — `/quality-report`, no arguments. |
-| `.claude/STANDARDS.md` | The rules every agent shares: the trust boundary, how coverage is measured and validated, requirements traceability, and the security checklist. Project values it relies on come from `.waypoint/config.json`. |
-| `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one. |
+| `.waypoint/stack.md` | Your stack facts in prose: each test layer's framework, file locations, run command and accessibility-scanning pattern, plus how coverage is measured per layer. Every test-writing agent follows it. |
+| `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one (left alone if you already have one). |
 | `.gitignore` | Updated (or created) to exclude `.workflow/`, the pipeline's local scratch state. |
+| `.claude/settings.json` | Only if you chose to share the plugin: the Waypoint marketplace and `waypoint@waypoint` enabled, merged into your existing settings. |
 
-No template markers or generator comments should remain anywhere in these files
-(`waypoint-init` checks this itself before finishing, but it's worth a skim), and
-`.waypoint/stack.md` is the one to read closely — it's the prose `waypoint-init` wrote about your
-stack, and every test-writing agent follows it. They're yours now: edit them freely, same as any
-other file in your repo. There's no ongoing link back to the Waypoint repository.
+The pipeline itself lives in the plugin: the `ship-feature` orchestrator (steps belonging to a layer
+you didn't enable are marked in it and skipped when it runs; step numbers never change, so a run
+without BDD goes from Step 5 to Step 7), the twelve subagents, the `quality-report` trigger, and the
+`STANDARDS.md` rules every agent shares — the trust boundary, how coverage is measured and
+validated, requirements traceability, and the security checklist.
 
-## Step 5 — Commit the generated pipeline
+Read `.waypoint/stack.md` closely — it's the prose `/waypoint:init` wrote about your stack. No
+`<!-- Generator` comments should remain in it (`/waypoint:init` checks this itself before
+finishing). Both `.waypoint/` files are yours: edit them freely, same as any other file in your
+repo.
+
+## Step 5 — Commit the setup
 
 ```bash
-git add .claude/ docs/adr/ .gitignore
-git commit -m "Adopt the Waypoint ship-feature pipeline"
+git add .waypoint/ docs/adr/ .gitignore .claude/settings.json
+git commit -m "Adopt the Waypoint pipeline"
 ```
 
-Do this before running the pipeline for real, so you have a clean point to diff against if you
-ever want to see what a `/ship-feature` run changed versus what setup produced.
+(Leave `.claude/settings.json` out if you didn't share the plugin.) Do this before running the
+pipeline for real, so you have a clean point to diff against if you ever want to see what a
+`/waypoint:ship-feature` run changed versus what setup produced.
 
 ## Step 6 — Ship your first change
 
 ```
-/ship-feature <describe the change you want>
+/waypoint:ship-feature <describe the change you want>
 ```
 
 Here's what to expect, in order:
@@ -166,7 +171,7 @@ A run can take anywhere from minutes to a couple of hours depending on how much 
 happens at the two human gates and how many bug-fix cycles are needed — the final report's time
 total includes that human wait time explicitly, so it isn't mistaken for pure engineering effort.
 
-If you close Claude Code partway through, just run `/ship-feature` again later with no new
+If you close Claude Code partway through, just run `/waypoint:ship-feature` again later with no new
 request — it'll find the in-progress run and resume from where it left off.
 
 ## Periodic quality reports
@@ -197,7 +202,7 @@ report to you.
 **How to trigger it manually.** Run:
 
 ```
-/quality-report
+/waypoint:quality-report
 ```
 
 any time — no arguments. It reads whatever release history already exists, regenerates both
@@ -208,8 +213,8 @@ plainly rather than inventing a trend from too little data.
 
 ## Customizing your pipeline afterward
 
-Once generated, your pipeline is ordinary text in your repo — there's no magic re-sync with
-Waypoint. Common tweaks:
+Everything project-specific is ordinary text in your repo's `.waypoint/`; the pipeline itself comes
+from the plugin and updates with it (`/plugin marketplace update waypoint`). Common tweaks:
 
 - **Change your coverage thresholds, WCAG scope, or quality-report cadence** — edit
   `.waypoint/config.json`. Every agent that cares reads it from there, so this is the one place to
@@ -218,18 +223,20 @@ Waypoint. Common tweaks:
   accessibility tool, moved spec folder) — edit the matching section of `.waypoint/stack.md`.
 - **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — flip it in
   `.waypoint/config.json`'s `layers`, and add (or delete) its section in `.waypoint/stack.md`. The
-  pipeline picks it up on the next run; nothing in `.claude/` changes. Re-running `/waypoint-init`
-  (see below) does the same and writes the new `stack.md` section for you.
-- **Adjust an individual agent's behavior** — e.g. tighten what `qa-reviewer` checks, or change
-  `bug-fixer`'s scope rules — just edit that agent's `.claude/agents/*.md` file directly.
+  pipeline picks it up on the next run. Re-running `/waypoint:init` (see below) does the same and
+  writes the new `stack.md` section for you.
+- **Adjust how the agents work in your project** — project conventions they should follow (where
+  helpers live, a test style to match, a library to prefer) belong in `.waypoint/stack.md`, which
+  every test-writing agent reads. Changing an agent's instructions themselves (e.g. what
+  `qa-reviewer` checks) means changing the plugin: fork the Waypoint repository, edit
+  `plugins/waypoint/`, and install from your fork's marketplace instead.
 
-### Re-running `waypoint-init`
+### Re-running `/waypoint:init`
 
-Running `/waypoint-init` again in a project that already has a generated pipeline is supported —
-it detects the existing files and asks you to confirm before overwriting anything. Use this if
-your stack changes in a way that would've changed your original answers (switched test frameworks,
-added a deploy target, etc.) rather than hand-patching the generated files, which is easy to get
-subtly wrong.
+Running `/waypoint:init` again in a project that's already set up is supported — it starts from your
+existing `.waypoint/` files and asks you to confirm before overwriting them. Use this if your stack
+changes in a way that would've changed your original answers (switched test frameworks, added a
+deploy target, etc.), so `stack.md` gets rewritten with the same care as the first time.
 
 ## Troubleshooting / FAQ
 
@@ -237,14 +244,14 @@ subtly wrong.
 (`build`, `test:unit`, etc.) — see [Workflow Overview](Workflow-Overview#whats-fixed-not-configurable)
 for why that's a fixed assumption right now rather than a setup question.
 
-**"`waypoint-init` detected the wrong package manager / framework."** Just correct it when asked —
-detection is a starting recommendation, not a final answer. If you notice it picked something
-wrong *after* generation finished, the cleanest fix is re-running `/waypoint-init` rather than
-hand-editing every generated file.
+**"`/waypoint:init` detected the wrong package manager / framework."** Just correct it when asked
+— detection is a starting recommendation, not a final answer. If you notice something wrong after
+setup finished, fix it in `.waypoint/config.json` or `.waypoint/stack.md`, or re-run
+`/waypoint:init`.
 
 **"I don't have a GitHub repo for this project yet."** Create one first (`gh repo create`, or via
 github.com) — the pipeline needs `origin` configured and `gh` authenticated against it before your
-first `/ship-feature` run, specifically at the branch-push and PR-creation steps.
+first `/waypoint:ship-feature` run, specifically at the branch-push and PR-creation steps.
 
 **"Can I skip the manual test gate?"** Yes — when asked, tell it testing isn't needed for this
 change. It's a gate you can waive per run, not a hard requirement. You'll be asked for a one-line
@@ -262,5 +269,5 @@ and its resolution, and total time.
 
 **"Where do I see trends over time — velocity, defect rates, delivery time?"**
 `reports/metrics/weekly-<date>.md` and `monthly-<date>.md`, written automatically every 10
-releases (configurable) or any time via `/quality-report`. See
+releases (configurable) or any time via `/waypoint:quality-report`. See
 [Periodic quality reports](User-Guide#periodic-quality-reports).

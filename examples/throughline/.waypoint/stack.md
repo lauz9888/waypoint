@@ -26,7 +26,7 @@ Vitest (unit), Cucumber.js (BDD, `.feature` files), and Playwright (e2e).
 
 ## coverage
 
-throughline was set up before Waypoint recorded a per-layer instrumentation plan, so none is recorded here yet. The first change that touches `test:coverage:merge` or how any layer is instrumented must write this section from what it finds, following `.claude/STANDARDS.md`'s "Coverage measurement" section, and treat its calibration requirements as part of that change.
+throughline was set up before Waypoint recorded a per-layer instrumentation plan, so none is recorded here yet. The first change that touches `test:coverage:merge` or how any layer is instrumented must write this section from what it finds, following the "Coverage measurement" section of the Waypoint plugin's `STANDARDS.md`, and treat its calibration requirements as part of that change.
 
 - Source root and exclusions: not yet recorded.
 - Known secondary-only artefact classes: none.

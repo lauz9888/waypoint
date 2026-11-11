@@ -1,0 +1,13 @@
+{
+  "name": "waypoint",
+  "displayName": "Waypoint",
+  "version": "1.0.0",
+  "description": "A spec-first, test-first development pipeline: requirements, design review, test-first unit/e2e (plus optional BDD and Storybook), implementation, bug-fix loops, QA and coverage gates, manual test gate, merge, CI/CD, docs, and post-change and periodic quality reports. Each project keeps its own settings in .waypoint/.",
+  "author": {
+    "name": "Laura Hughes"
+  },
+  "homepage": "https://github.com/lauz9888/waypoint/wiki",
+  "repository": "https://github.com/lauz9888/waypoint",
+  "license": "MIT",
+  "keywords": ["workflow", "tdd", "testing", "qa", "requirements", "accessibility", "coverage"]
+}

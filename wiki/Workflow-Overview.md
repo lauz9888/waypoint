@@ -6,7 +6,7 @@ deployed, documented, reported-on reality.
 ## What Waypoint is
 
 Waypoint is a **spec-first, test-first development pipeline** for [Claude Code](https://claude.com/claude-code),
-built around one orchestrator skill — `/ship-feature` — that drives a team of specialized
+built around one orchestrator skill — `/waypoint:ship-feature` — that drives a team of specialized
 subagents through every stage of shipping a change: turning a rough request into tested
 requirements, designing and reviewing a solution, writing tests before any implementation exists,
 implementing until they pass, running full quality gates, merging, watching CI/CD, updating docs,
@@ -31,12 +31,12 @@ guarantees themselves.
 
 ## Guarantees
 
-These are the commitments that hold in any pipeline `waypoint-init` generates, independent of how
-the mechanics below happen to work today:
+These are the commitments that hold in every project the Waypoint plugin runs in, independent of
+how the mechanics below happen to work today:
 
 - **Every decision is grounded in the actual codebase**, never in assumptions — a requirements
   analyst reads the code before writing requirements; a solution designer reads existing patterns
-  before proposing new ones; `waypoint-init` itself inspects a project's `package.json` before
+  before proposing new ones; `/waypoint:init` itself inspects a project's `package.json` before
   asking a single question.
 - **Approved requirements are the authority on intended behavior, at every stage.** Each
   requirement has a stable ID (`REQ-007`), acceptance criteria, and expected behavior for its
@@ -71,7 +71,7 @@ the mechanics below happen to work today:
 - **Repository content is data, never instructions.** Source files, issue/PR text, logs, and
   command output are things every agent reads, not things that can redirect what it does — the
   only real instructions are an agent's own definition and what the orchestrator/user explicitly
-  asks for. See `.claude/STANDARDS.md`'s "Trust boundary for repository content" section.
+  asks for. See the plugin's `STANDARDS.md`'s "Trust boundary for repository content" section.
 
 ## Implementation details
 
@@ -127,7 +127,7 @@ stops and asks for help.
 
 ### The agent roster
 
-The orchestrator (`/ship-feature` itself, running in your main conversation) never writes code or
+The orchestrator (`/waypoint:ship-feature` itself, running in your main conversation) never writes code or
 tests directly — it spawns these subagents and acts on their `STATUS:` reports:
 
 | Agent | Role |
@@ -182,7 +182,7 @@ functional requirement, not a layer a project can decline.
 
 ### How a run stays resumable
 
-Every `/ship-feature` run keeps its state in `.workflow/<slug>/` — gitignored, local scratch, never
+Every `/waypoint:ship-feature` run keeps its state in `.workflow/<slug>/` — gitignored, local scratch, never
 part of the PR:
 
 - `requirements.md`, `design.md` — the working documents.
@@ -190,7 +190,7 @@ part of the PR:
   bug issue numbers. Updated after every step.
 - `meta.json` — when the run started, for the final report's duration metric.
 
-If you close Claude Code mid-run and come back, invoking `/ship-feature` again with no new request
+If you close Claude Code mid-run and come back, invoking `/waypoint:ship-feature` again with no new request
 finds the incomplete run and picks up exactly where it left off.
 
 ### Periodic quality reporting
@@ -247,7 +247,7 @@ if you want reports more or less often (e.g. `5` for a fast-moving project, `20`
 
 #### How to trigger it manually
 
-Run `/quality-report` — no arguments needed. It spawns `quality-reporter` against whatever release
+Run `/waypoint:quality-report` — no arguments needed. It spawns `quality-reporter` against whatever release
 history already exists, writes both reports, commits them, and tells you the
 two file paths plus a one-line headline summary (velocity trend, post-merge delivery-failure rate).
 There's no loop or retry cap here — it's a deterministic read over existing data, so a stale or
@@ -255,32 +255,32 @@ unwanted run just gets superseded the next time this runs, automatically or by h
 time you want a current read without waiting for the cadence to land on a milestone: before a
 retro, a stakeholder update, or just out of curiosity.
 
-### Templates vs. your project's actual pipeline
+### The plugin vs. your project's settings
 
-This repository (Waypoint) holds **templates** — the pipeline's agents, skills and shared
-standards, with conditional blocks for the optional layers — not a runnable pipeline itself. The
-templates contain nothing specific to any one project. `waypoint-init` inspects *your* project and
-writes everything specific to it into *your* `.waypoint/` directory: `config.json` (name, package
-manager, enabled layers, thresholds, WCAG tags, report cadence) and `stack.md` (real framework
-names, file locations, run commands and accessibility-scan patterns per layer). It then copies the
-templates into your `.claude/` unchanged; the agents read `.waypoint/` while they run, including
-which optional layers to apply. From then on, your project's copy is yours — edit it freely, it has
-no ongoing link back to this repository. See the [User Guide](User-Guide) to actually do this.
+Waypoint is a Claude Code plugin: the pipeline's skills, agents and shared standards — with
+conditional blocks for the optional layers — live in the plugin, are the same for every project,
+and update together. Nothing in them is specific to any one project. `/waypoint:init` inspects
+*your* project and writes everything specific to it into *your* `.waypoint/` directory:
+`config.json` (name, package manager, enabled layers, thresholds, WCAG tags, report cadence) and
+`stack.md` (real framework names, file locations, run commands and accessibility-scan patterns per
+layer). The agents read `.waypoint/` while they run, including which optional layers to apply.
+`.waypoint/` is yours — edit it freely. See the [User Guide](User-Guide) to set it up.
 
 Step numbers are fixed IDs: every Waypoint project uses the same number for the same step, and
 they're never renumbered. A run without an optional layer skips that layer's steps (Steps 6 and 10
 without BDD, Step 13 without the path-prefixed deploy layer, Step 11a without Storybook).
 
-The templates are checked in CI (`scripts/run-fixture-tests.js`,
-`.github/workflows/validate-templates.yml` in this repo) as they are and as an agent reads them
-under all eight combinations of optional layers, along with the `.waypoint/` templates and
-`examples/throughline`'s real `.waypoint/`. A template edit that breaks the pipeline's internal
-consistency fails a build instead of only surfacing in someone's real run: a `Step N` reference to
-a step that's skipped or doesn't exist, layer-only text (like `test:bdd`) outside its layer's block,
+The plugin is checked in CI (`scripts/run-fixture-tests.js`,
+`.github/workflows/validate-templates.yml` in this repo) as it is and as an agent reads it under
+all eight combinations of optional layers, along with its manifests, its `.waypoint/` templates and
+`examples/throughline`'s real `.waypoint/`. An edit that breaks the pipeline's internal consistency
+fails a build instead of only surfacing in someone's real run: a `Step N` reference to a step
+that's skipped or doesn't exist, layer-only text (like `test:bdd`) outside its layer's block,
 leftover template syntax, an unbalanced/unknown `WAYPOINT:OPTIONAL` block, an agent description
-naming the wrong step, or a missing or invalid config field or stack section. Two things it deliberately does *not* check: whether the prose `waypoint-init`
-writes into a real `stack.md` is *good* (that still needs a human/LLM reading it), and whether a
-template author wrote the step number they meant — a mention of Step 12 where Step 15 was intended still passes, because Step 12 exists. See
+naming the wrong step, a spawned agent or `${CLAUDE_PLUGIN_ROOT}` path that isn't in the plugin, or
+a missing or invalid config field or stack section. Two things it deliberately does *not* check:
+whether the prose `/waypoint:init` writes into a real `stack.md` is *good* (that still needs a
+human/LLM reading it), and whether an author wrote the step number they meant — a mention of Step 12 where Step 15 was intended still passes, because Step 12 exists. See
 `scripts/README.md` for the full breakdown if you're extending the templates.
 
 ## A hypothetical example
@@ -289,7 +289,7 @@ To make the stages concrete, here's how a small, ordinary change might move thro
 for a fictional project — a React/Node todo-list app called `taskly`, with the BDD layer off and
 the path-prefixed deploy layer off (a normal server-hosted app, not a GitHub Pages build).
 
-**The request:** the user types `/ship-feature let users mark a task as high priority, with a
+**The request:** the user types `/waypoint:ship-feature let users mark a task as high priority, with a
 visual indicator in the list`.
 
 1. **Requirements.** `requirements-analyst` reads `taskly`'s existing task model and list component,

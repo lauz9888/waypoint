@@ -2,7 +2,7 @@
 
 /**
  * Checks for an adopting project's `.waypoint/config.json` and `.waypoint/stack.md` — the only
- * project-specific files in a Waypoint pipeline (see .claude/STANDARDS.md's "Project
+ * project-specific files in a Waypoint pipeline (see the plugin's STANDARDS.md, "Project
  * configuration" section). No dependencies, no I/O: the caller reads the files.
  */
 

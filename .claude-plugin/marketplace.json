@@ -1,0 +1,15 @@
+{
+  "name": "waypoint",
+  "owner": {
+    "name": "Laura Hughes"
+  },
+  "description": "Waypoint: a reusable spec-first, test-first development pipeline for Claude Code.",
+  "plugins": [
+    {
+      "name": "waypoint",
+      "source": "./plugins/waypoint",
+      "description": "The ship-feature pipeline, its twelve subagents, the quality-report rollup, and /waypoint:init to set a project up.",
+      "category": "development"
+    }
+  ]
+}

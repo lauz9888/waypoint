@@ -2,14 +2,13 @@
 'use strict';
 
 /**
- * Structural validation of Waypoint's pipeline templates (`.claude/` in this repo, or a copy of
- * them such as examples/throughline/.claude). Every adopting project gets these files unchanged and
- * the agents apply the WAYPOINT:OPTIONAL layer blocks at run time, so the checks run on the
- * templates as they are, and again on every one of the eight ways an agent can read them (each
- * combination of layers on/off). Does NOT judge .waypoint/stack.md prose quality — see
- * scripts/README.md.
+ * Structural validation of the Waypoint plugin's pipeline files (plugins/waypoint/). Every adopting
+ * project runs these same files and the agents apply the WAYPOINT:OPTIONAL layer blocks at run
+ * time, so the checks run on the files as they are, and again on every one of the eight ways an
+ * agent can read them (each combination of layers on/off). Does NOT judge .waypoint/stack.md prose
+ * quality — see scripts/README.md.
  *
- * Usage: node scripts/validate-templates.js [dir]   (default: this repo's .claude/)
+ * Usage: node scripts/validate-templates.js [pluginDir]   (default: plugins/waypoint)
  * Exits non-zero and prints every failure if anything's wrong.
  */
 
@@ -41,14 +40,26 @@ const ALL_AGENTS = [
   'quality-reporter',
 ];
 
-// The files every adopting project gets — waypoint-init itself isn't one of them.
+const PLUGIN_NAME = 'waypoint';
+
+// The files a ship-feature run reads. Their step mentions all refer to ship-feature's steps.
 const PIPELINE_FILES = [
   'STANDARDS.md',
   'skills/ship-feature/SKILL.md',
   'skills/quality-report/SKILL.md',
   ...ALL_AGENTS.map((a) => `agents/${a}.md`),
 ];
+// The setup skill: checked for syntax and plugin paths, but its "Step N"s are its own steps.
+const INIT = 'skills/init/SKILL.md';
 const SKILL = 'skills/ship-feature/SKILL.md';
+
+// Leftovers from the copied-into-.claude/ install, which the plugin replaced.
+const STALE_REFERENCES = [
+  [/\.claude\/STANDARDS\.md/g, 'use ${CLAUDE_PLUGIN_ROOT}/STANDARDS.md'],
+  [/(?<![\w:/])\/(ship-feature|quality-report|waypoint-init)\b/g, 'skills are invoked as /waypoint:<name>'],
+];
+const PLUGIN_ROOT_REF_RE = /\$\{CLAUDE_PLUGIN_ROOT\}\/([\w./-]+)/g;
+const SUBAGENT_RE = /subagent_type="([^"]+)"/g;
 
 // agents whose frontmatter description names the step that spawns them
 const AGENTS_WITH_STEP_MENTION = ['qa-reviewer', 'docs-updater', 'report-generator', 'quality-reporter'];
@@ -109,12 +120,41 @@ function validate(dir) {
     if (!fs.existsSync(p)) failures.add(`${rel} missing`);
     else files.set(rel, fs.readFileSync(p, 'utf8'));
   }
+  const initPath = path.join(dir, INIT);
+  const allFiles = new Map(files);
+  if (!fs.existsSync(initPath)) failures.add(`${INIT} missing`);
+  else allFiles.set(INIT, fs.readFileSync(initPath, 'utf8'));
+
+  // Plugin wiring: every ${CLAUDE_PLUGIN_ROOT} path exists, every spawned agent is this plugin's,
+  // and nothing still points at the old copied-into-.claude/ layout.
+  for (const [rel, text] of allFiles) {
+    let m;
+    PLUGIN_ROOT_REF_RE.lastIndex = 0;
+    while ((m = PLUGIN_ROOT_REF_RE.exec(text))) {
+      const target = m[1].replace(/[.]+$/, '');
+      if (!fs.existsSync(path.join(dir, target))) {
+        failures.add(`${rel}:${lineOf(text, m.index)}: \${CLAUDE_PLUGIN_ROOT}/${target} doesn't exist in the plugin`);
+      }
+    }
+    SUBAGENT_RE.lastIndex = 0;
+    while ((m = SUBAGENT_RE.exec(text))) {
+      const [prefix, agent] = m[1].split(':');
+      if (prefix !== PLUGIN_NAME || !ALL_AGENTS.includes(agent)) {
+        failures.add(`${rel}:${lineOf(text, m.index)}: subagent_type "${m[1]}" isn't ${PLUGIN_NAME}:<one of this plugin's agents>`);
+      }
+    }
+    // init names the old layout on purpose: it detects and migrates it.
+    for (const [re, fix] of rel === INIT ? [] : STALE_REFERENCES) {
+      re.lastIndex = 0;
+      while ((m = re.exec(text))) failures.add(`${rel}:${lineOf(text, m.index)}: "${m[0]}" — ${fix}`);
+    }
+  }
 
   // Raw-file checks: no template syntax from the old generator, and well-formed layer blocks.
   let blocksOk = true;
-  for (const [rel, text] of files) {
+  for (const [rel, text] of allFiles) {
     if (text.includes('{{')) failures.add(`${rel}: "{{" placeholder syntax — project values belong in .waypoint/`);
-    if (text.includes('<!-- Generator')) failures.add(`${rel}: "<!-- Generator" comment — templates are copied as they are`);
+    if (rel !== INIT && text.includes('<!-- Generator')) failures.add(`${rel}: "<!-- Generator" comment — templates are copied as they are`);
     try {
       validateOptionalBlocks(text, rel);
     } catch (err) {
@@ -155,7 +195,7 @@ function validate(dir) {
     const agentText = files.get(`agents/${agent}.md`);
     if (!agentText) continue; // already flagged as missing
     const fmMatch = agentText.match(/Invoked[^.]*?\bStep (\d+a?)\b/);
-    const actualStep = findAgentSpawnStep(files.get(SKILL), agent);
+    const actualStep = findAgentSpawnStep(files.get(SKILL), `${PLUGIN_NAME}:${agent}`);
     if (fmMatch && actualStep && fmMatch[1] !== actualStep) {
       failures.add(`agents/${agent}.md: frontmatter says "Step ${fmMatch[1]}" but SKILL.md spawns it at Step ${actualStep}`);
     } else if (fmMatch && !actualStep) {
@@ -167,7 +207,7 @@ function validate(dir) {
 }
 
 function main() {
-  const dir = path.resolve(process.argv[2] || path.join(__dirname, '..', '.claude'));
+  const dir = path.resolve(process.argv[2] || path.join(__dirname, '..', 'plugins', PLUGIN_NAME));
   const failures = validate(dir);
   if (failures.length) {
     console.error(`FAIL — ${failures.length} issue(s) in ${dir}:`);
@@ -181,4 +221,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { validate, PIPELINE_FILES };
+module.exports = { validate, PIPELINE_FILES, PLUGIN_NAME };

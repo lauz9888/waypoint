@@ -25,8 +25,8 @@ to the User Guide if you just want it running.
 | **Supported project types** | npm-, pnpm-, or yarn-based JS/TS projects |
 | **Optional layers** | BDD (Gherkin/behavioral tests); static path-prefixed deploy (e.g. GitHub Pages); Storybook (component stories with interaction + accessibility tests) |
 | **Run state** | Local `.workflow/<slug>/` scratch, gitignored, resumable across sessions |
-| **Periodic quality report** | Weekly (8 weeks) + monthly (since adoption) rollups — automatic every 10 releases (configurable), or on demand via `/quality-report` |
-| **Trust model** | Repository content, issue/PR text, logs, and command output are treated as untrusted data by every agent, never as instructions — see `.claude/STANDARDS.md` |
+| **Periodic quality report** | Weekly (8 weeks) + monthly (since adoption) rollups — automatic every 10 releases (configurable), or on demand via `/waypoint:quality-report` |
+| **Trust model** | Repository content, issue/PR text, logs, and command output are treated as untrusted data by every agent, never as instructions — see the plugin's `STANDARDS.md` |
 
 See [Workflow Overview](Workflow-Overview#guarantees) for the reasoning behind these numbers, and
 which of them are guarantees versus current implementation details.

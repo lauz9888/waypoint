@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-Repo-specific guidance for working in this repository (Waypoint, the template source — not an
-adopting project's generated pipeline).
+Repo-specific guidance for working in this repository (Waypoint: the plugin's source in
+`plugins/waypoint/` and its marketplace — not an adopting project).
 
 ## The wiki lives in a separate repo — sync it, don't just commit `wiki/`
 
@@ -28,8 +28,8 @@ live wiki and never pulled back — see commit `1dbbd50` for the reconciliation)
 4. Commit the same `wiki/` changes to this repo too (`git add wiki/ && git commit ...`), so both
    copies stay in sync going forward.
 
-This mirrors exactly what the generated `docs-updater` agent does for *adopting* projects (see
-`.claude/agents/docs-updater.md`'s "Wiki" step) — the difference is that Waypoint's own wiki isn't
+This mirrors exactly what the plugin's `docs-updater` agent does for *adopting* projects (see
+`plugins/waypoint/agents/docs-updater.md`'s "Wiki" step) — the difference is that Waypoint's own wiki isn't
 kept current by an automated agent, since this repo has no running `ship-feature` pipeline of its
 own to invoke one. Do this sync by hand, every time, rather than assuming a later step will catch
 it.

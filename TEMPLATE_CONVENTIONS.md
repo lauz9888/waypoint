@@ -1,17 +1,31 @@
 # Template conventions
 
-The files under `.claude/` in this repo are the pipeline's **templates**. They contain nothing
-specific to one project: everything that differs between projects — including which optional
-layers are on — lives in the adopting project's `.waypoint/` directory, which the agents read while
-they run. `waypoint-init` writes `.waypoint/` from what it detects and confirms, and copies
-`.claude/` byte for byte, so every Waypoint project has identical `.claude/` files.
-`examples/throughline/` is a worked example: the project this pipeline was extracted from, with
-its real `.waypoint/` and the installed `.claude/` copy.
+The pipeline lives in the Waypoint plugin, `plugins/waypoint/`: its skills (`skills/`), agents
+(`agents/`), shared rules (`STANDARDS.md`) and the templates `/waypoint:init` starts a project from
+(`templates/`). The repo root's `.claude-plugin/marketplace.json` publishes it. None of the plugin's
+files is specific to one project: everything that differs between projects — including which
+optional layers are on — lives in the adopting project's `.waypoint/` directory, which the agents
+read while they run. `/waypoint:init` writes `.waypoint/` from what it detects and confirms.
+`examples/throughline/` is a worked example: the project this pipeline was extracted from, with its
+real `.waypoint/` and the `.claude/settings.json` that shares the plugin with its collaborators.
+
+## Plugin paths and names
+
+- A file inside the plugin is referenced as `${CLAUDE_PLUGIN_ROOT}/<path>` (e.g.
+  `${CLAUDE_PLUGIN_ROOT}/STANDARDS.md`). Claude Code substitutes the installed location when it
+  loads a skill or agent, so agents read it with their file tools. The variable isn't set in the
+  Bash environment, so never use it inside a shell command.
+- Plugin components are namespaced: skills are `/waypoint:<skill>` and agents are spawned as
+  `subagent_type="waypoint:<agent>"`. An agent's frontmatter `name` stays unprefixed.
+- Plugin agents ignore the `permissionMode`, `hooks`, `mcpServers` and `initialPrompt` frontmatter
+  fields, so don't rely on them.
+- Bump `version` in `plugins/waypoint/.claude-plugin/plugin.json` for every release — installed
+  copies stay on the version they have until it changes.
 
 ## `.waypoint/config.json`
 
-Every project-specific value, as JSON (shape: `templates/waypoint/config.json`; checked by
-`scripts/lib/waypoint-config.js`). Templates refer to a field by name — e.g. "`coverage.branches`
+Every project-specific value, as JSON (shape: `plugins/waypoint/templates/config.json`; checked by
+`scripts/lib/waypoint-config.js`). The plugin refers to a field by name — e.g. "`coverage.branches`
 from `.waypoint/config.json`" — and never repeat its value.
 
 | Field                  | Meaning                                    | throughline's value                          |
@@ -36,8 +50,9 @@ The project's stack facts — prose no single value can capture. One `## <sectio
 tool with the exact call pattern to follow); and `coverage` (the per-layer coverage
 instrumentation plan: provider, primary/secondary role, output path, shared exclusions). Agents look
 sections up by heading, so the headings are fixed; a disabled layer's section is left out.
-`waypoint-init` writes it from `templates/waypoint/stack.md`'s generator comments, in the voice and
-level of detail of `examples/throughline/.waypoint/stack.md` (e.g. its `unit-test` section names
+`/waypoint:init` writes it from `plugins/waypoint/templates/stack.md`'s generator comments, in the
+voice and level of detail of `templates/stack.example.md` — a copy of
+`examples/throughline/.waypoint/stack.md`, kept identical by the tests (e.g. its `unit-test` section names
 Vitest, `*.test.ts`/`*.test.tsx` file locations, `vitest.setup.ts`'s `jest-axe` wiring, and the
 exact `axe()` call pattern).
 
