@@ -90,7 +90,7 @@ You don't need to have answers ready in advance — if something's detectable fr
 | `.waypoint/stack.md` | Your stack facts in prose: each test layer's framework, file locations, run command and accessibility-scanning pattern, plus how coverage is measured per layer. Every test-writing agent follows it. |
 | `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one (left alone if you already have one). |
 | `.gitignore` | Updated (or created) to exclude `.workflow/`, the pipeline's local scratch state. |
-| `.claude/settings.json` | Only if you chose to share the plugin: the Waypoint marketplace and `waypoint@waypoint` enabled, merged into your existing settings. |
+| `.claude/settings.json` | Only if you chose to share the plugin: the Waypoint marketplace (with auto-update on) and `waypoint@waypoint` enabled, merged into your existing settings. |
 
 The pipeline itself lives in the plugin: the `ship-feature` orchestrator (steps belonging to a layer
 you didn't enable are marked in it and skipped when it runs; step numbers never change, so a run
@@ -214,7 +214,11 @@ plainly rather than inventing a trend from too little data.
 ## Customizing your pipeline afterward
 
 Everything project-specific is ordinary text in your repo's `.waypoint/`; the pipeline itself comes
-from the plugin and updates with it (`/plugin marketplace update waypoint`). Common tweaks:
+from the plugin and updates with it. If you shared the plugin through `.claude/settings.json`,
+auto-update is already on for the Waypoint marketplace; otherwise Claude Code doesn't auto-update
+it, so either turn it on (`/plugin` → **Marketplaces** → waypoint → **Enable auto-update**) or update
+by hand with `claude plugin update waypoint@waypoint`. An update applies from your next session (or
+after `/reload-plugins`). Common tweaks:
 
 - **Change your coverage thresholds, WCAG scope, or quality-report cadence** — edit
   `.waypoint/config.json`. Every agent that cares reads it from there, so this is the one place to

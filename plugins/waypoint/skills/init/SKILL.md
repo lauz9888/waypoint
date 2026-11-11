@@ -87,7 +87,8 @@ wrong values here reach every agent that reads `.waypoint/`.
      turn on (anything unticked is off).
    - **Share with collaborators** — whether to add the Waypoint marketplace and plugin to the
      project's committed `.claude/settings.json` (Step 4.5), so anyone who clones the repo and
-     trusts the folder is offered the plugin. Recommend yes for a team repo.
+     trusts the folder is offered the plugin and keeps it up to date automatically. Recommend yes
+     for a team repo.
 
    The three layers:
    - **BDD layer** — on/off. Explain the tradeoff briefly (a separate Gherkin/behavioral layer
@@ -166,8 +167,10 @@ wrong values here reach every agent that reads `.waypoint/`.
    containing just `.workflow/`.
 5. **`.claude/settings.json`**, only if the user chose to share with collaborators: add (merging
    into the existing file, changing nothing else in it)
-   `"extraKnownMarketplaces": {"waypoint": {"source": {"source": "github", "repo": "lauz9888/waypoint"}}}`
-   and `"enabledPlugins": {"waypoint@waypoint": true}`.
+   `"extraKnownMarketplaces": {"waypoint": {"source": {"source": "github", "repo": "lauz9888/waypoint"}, "autoUpdate": true}}`
+   and `"enabledPlugins": {"waypoint@waypoint": true}`. `autoUpdate` matters: Claude Code doesn't
+   auto-update third-party marketplaces by default, so without it every collaborator stays on
+   the plugin version they first installed until they update by hand.
 6. **Older copied-in pipeline**: if the user chose to remove it in Step 3.4, delete exactly the
    files Step 1.2 listed — nothing else under `.claude/`. Then `Grep` the rest of the repo
    (excluding `.git/`, `node_modules/`, `.workflow/` and `.waypoint/`) for references the removal
