@@ -81,6 +81,9 @@ function checkProjectSettings(claudeDir) {
   if (!source || source.source !== 'github' || source.repo !== 'lauz9888/waypoint') {
     failures.push(`extraKnownMarketplaces.${PLUGIN_NAME} must point at the lauz9888/waypoint GitHub repo`);
   }
+  if (!settings.extraKnownMarketplaces || !settings.extraKnownMarketplaces[PLUGIN_NAME] || settings.extraKnownMarketplaces[PLUGIN_NAME].autoUpdate !== true) {
+    failures.push(`extraKnownMarketplaces.${PLUGIN_NAME}.autoUpdate must be true, or collaborators never get plugin updates`);
+  }
   if (!settings.enabledPlugins || settings.enabledPlugins[`${PLUGIN_NAME}@${PLUGIN_NAME}`] !== true) {
     failures.push(`enabledPlugins must enable ${PLUGIN_NAME}@${PLUGIN_NAME}`);
   }

@@ -20,7 +20,9 @@ real `.waypoint/` and the `.claude/settings.json` that shares the plugin with it
 - Plugin agents ignore the `permissionMode`, `hooks`, `mcpServers` and `initialPrompt` frontmatter
   fields, so don't rely on them.
 - Bump `version` in `plugins/waypoint/.claude-plugin/plugin.json` for every release — installed
-  copies stay on the version they have until it changes.
+  copies stay on the version they have until it changes. Even then, Claude Code only fetches it
+  automatically where the marketplace has auto-update on: the `.claude/settings.json`
+  `/waypoint:init` writes sets `autoUpdate` for that reason; anyone else updates by hand.
 
 ## `.waypoint/config.json`
 
