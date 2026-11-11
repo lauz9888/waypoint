@@ -3,17 +3,11 @@ name: ship-feature
 description: Runs the full {{PROJECT_NAME}} change pipeline end-to-end — requirements, solution design/review, branch, test-first unit<!-- WAYPOINT:OPTIONAL:BDD -->/BDD<!-- WAYPOINT:END -->/e2e<!-- WAYPOINT:OPTIONAL:STORYBOOK -->/Storybook<!-- WAYPOINT:END -->, implementation, bug-fix loops, QA + coverage gate, manual test gate, merge, CI/CD, docs, and a post-change report. Invoke with the change request as the argument, e.g. `/ship-feature add a dark mode toggle to settings`.
 ---
 
-<!-- Generator note: step numbers below assume every optional layer (BDD, static-SPA deploy) is
-     enabled (the STORYBOOK layer adds only the out-of-band Step 11a, so it never shifts numbering), mirroring examples/throughline (22 steps total, after Step 13's base-path smoke
-     check was added, plus the out-of-band Step 21a for periodic quality reporting). If an
-     adopting project omits a layer, delete its step(s) and either
-     renumber everything after or leave a documented gap — generator's/maintainer's call — but
-     keep the numbers this file's own cross-references use internally consistent either way.
-     Step 21a (release counter + periodic quality report) is named "<post-change-report step
-     number>a", not a fixed "21a" — if renumbering moves Post-change report to a different
-     number (e.g. Step 18, with both optional layers off), rename this step to match (e.g.
-     "Step 18a") and update its own cross-references (the "see Step 21a" mention inside Step 21,
-     and the "if Step 21a triggered..." mention in the final Step 22 summary) accordingly. -->
+<!-- Generator note: step numbers are fixed IDs shared by every Waypoint project — never renumber
+     them. Deleting a disabled layer's step (Steps 6/10 for BDD, Step 13 for STATIC_SPA_DEPLOY,
+     Step 11a for STORYBOOK) leaves a gap in the sequence, by design, and every remaining header
+     and cross-reference — in this file and in every agent/STANDARDS.md mention — keeps its
+     number unchanged. See TEMPLATE_CONVENTIONS.md's "Step numbers" section. -->
 
 You are driving a multi-step, largely-autonomous development pipeline for the {{PROJECT_NAME}} repo. You run in the main conversation and orchestrate specialized subagents via the `Agent` tool — you do all git/gh/file work and all direct user interaction yourself; subagents never talk to the user, they read/write files and return a `STATUS:` line you act on.
 
@@ -31,6 +25,8 @@ The user has explicitly pre-authorized this workflow to create branches, merge t
 - `traceability.md` — the run's traceability record (requirements ↔ tests ↔ risks, clarifications, residual risks), in the format `.claude/STANDARDS.md`'s "Requirements traceability" section defines. You build it at Step 7's trace check and keep it current whenever tests, requirements, or risks change.
 - `state.md` — plain markdown, updated immediately after every step completes: current step number, branch name, tracking issue number, per-layer test file lists (recorded at Steps 5/6/7; their purpose tags live in `traceability.md`), `coverage-percent`/`branch-coverage-percent`/`coverage-investigations` (Step 12), a `bug-issues` list of every issue number this run has created (see "Bug tracking" below — `report-generator` reads this list directly rather than searching), and — recorded rather than re-derived later, so nothing downstream has to guess "the latest" — `previous-main-sha`/`merge-sha` (Step 18), `cd-run-id`/`cd-outcome` (Step 19), `housekeeping-branch`/`housekeeping-pr` (Step 21a), and any `preview-server-pid`/`dev-server-pid` from a background server started at Steps 13/14 (cleared once stopped). This is what makes a run resumable.
 - `meta.json` — `{"slug": ..., "started_at": ISO timestamp}`, written at Step 2 kickoff; feeds the Step 21 duration metric.
+
+**Step numbers are fixed IDs.** Every Waypoint project uses the same number for the same step, and steps are never renumbered. A step belonging to an optional layer this project doesn't use is simply absent, so a gap in the sequence is expected, not an error. A mention of several steps (e.g. "Steps 9–11", "Step 5/6/7") means whichever of them exist in this file. Record a step in `state.md` by its ID exactly as its header writes it (e.g. `11a`).
 
 **Resuming.** If invoked with no clear new change request, look for `.workflow/*/state.md`. Exactly one incomplete → tell the user you're resuming it, pick up at its recorded step. More than one → `AskUserQuestion`. None → treat input as a new request.
 

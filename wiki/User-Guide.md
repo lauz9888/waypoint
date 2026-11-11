@@ -85,7 +85,7 @@ You don't need to have answers ready in advance — if something's detectable fr
 | Path | What it is |
 |---|---|
 | `.claude/agents/*.md` | The subagent roster (11 files, or 12 if you enabled BDD), each recreated for your actual stack. |
-| `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator, with the step numbering adjusted to whichever layers you enabled. |
+| `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator, with the steps of any layer you didn't enable removed. Step numbers never change, so a gap (e.g. no Step 6 without BDD) is expected. |
 | `.claude/skills/quality-report/SKILL.md` | On-demand trigger for the periodic quality/velocity rollup (see below) — `/quality-report`, no arguments. |
 | `.claude/STANDARDS.md` | Your coverage thresholds and how coverage is measured, WCAG tag scope, runtime version, and quality-report cadence — the one place to change them later. |
 | `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one. |
@@ -212,7 +212,8 @@ Waypoint. Common tweaks:
   `.claude/STANDARDS.md`. Every agent that cares reads it from there, so this is the one place to
   change.
 - **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — easiest done by
-  re-running `/waypoint-init` (see below) rather than hand-editing the step numbering yourself.
+  re-running `/waypoint-init` (see below) rather than hand-copying that layer's steps, agents and
+  labels into your files.
 - **Adjust an individual agent's behavior** — e.g. tighten what `qa-reviewer` checks, or change
   `bug-fixer`'s scope rules — just edit that agent's `.claude/agents/*.md` file directly.
 
@@ -221,8 +222,8 @@ Waypoint. Common tweaks:
 Running `/waypoint-init` again in a project that already has a generated pipeline is supported —
 it detects the existing files and asks you to confirm before overwriting anything. Use this if
 your stack changes in a way that would've changed your original answers (switched test frameworks,
-added a deploy target, etc.) rather than hand-patching the step renumbering yourself, which is easy
-to get subtly wrong.
+added a deploy target, etc.) rather than hand-patching the generated files, which is easy to get
+subtly wrong.
 
 ## Troubleshooting / FAQ
 

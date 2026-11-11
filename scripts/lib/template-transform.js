@@ -24,14 +24,14 @@ const GENERATOR_NOTE_RE = /<!-- Generator note:[\s\S]*?-->\n?/g;
 const GENERATOR_RE = /<!-- Generator:[\s\S]*?-->\n?/g;
 const STANDALONE_WAYPOINT_NOTE_RE = /<!-- WAYPOINT: [\s\S]*?-->\n?/g;
 
-// Matches "Step N", "Steps N", "Step Na", "Steps N-M" / "Steps N–M" (hyphen or en dash),
-// anywhere in the text — including inside "## Step N — ..." headers, since a header is just
-// "## " followed by ordinary "Step N" text.
-const STEP_REF_RE = /\bSteps?\s+(\d+)(a)?(\s*[–-]\s*(\d+)(a)?)?/g;
+// Matches a step mention: "Step N", "Step Na", a range "Steps N-M" / "Steps N–M" (hyphen or en
+// dash), or a slash list "Step 5/6/7" — anywhere in the text, including inside "## Step N — ..."
+// headers, since a header is just "## " followed by ordinary "Step N" text. Group 1 is the first
+// step ID; group 2 is the rest of a range or list, if any (see parseStepRef).
+const STEP_REF_RE = /\bSteps?\s+(\d+a?)((?:\s*[–/-]\s*\d+a?)*)/g;
 
-// Header-only scan, used to determine which step numbers actually survive in this file (a
-// disabled optional layer's steps are already gone by the time this runs, via resolveOptionalBlocks).
-const STEP_HEADER_RE = /^## Steps?\s+(\d+)\b(?:\s*[–-]\s*(\d+))?/gm;
+// A whole "## Step N — Title" / "## Steps N–M — Title" header line.
+const STEP_HEADER_LINE_RE = /^## Steps?\s+(\d+a?)(?:\s*[–-]\s*(\d+a?))?\s+—\s+(.+?)\s*$/;
 
 function substitutePlaceholders(text, values) {
   return text.replace(PLACEHOLDER_RE, (whole, key) => {
@@ -104,45 +104,40 @@ function stripGeneratorComments(text) {
     .replace(STANDALONE_WAYPOINT_NOTE_RE, '');
 }
 
-/** Every step number (both ends of any header range) that actually appears as a "## Step(s) N" heading. */
-function findSurvivorSteps(text) {
-  const survivors = new Set();
-  let m;
-  STEP_HEADER_RE.lastIndex = 0;
-  while ((m = STEP_HEADER_RE.exec(text))) {
-    survivors.add(Number(m[1]));
-    if (m[2]) survivors.add(Number(m[2]));
-  }
-  return survivors;
-}
-
-/** Old step number -> new step number, derived from which "## Step(s) N" headers survive in
- * `skillText` (i.e. after disabled-layer sections have already been stripped). */
-function computeStepRenumberMap(skillText) {
-  const survivors = [...findSurvivorSteps(skillText)].sort((a, b) => a - b);
-  return new Map(survivors.map((old, idx) => [old, idx + 1]));
-}
-
-/** Rewrites every "Step N"/"Steps N-M"/"Step Na" occurrence in `text` (headers included) using
- * a renumber map already computed from SKILL.md — this is what needs applying to every OTHER
- * generated file too (agent frontmatter, STANDARDS.md), not just SKILL.md itself, since a step
- * mention doesn't stop being a cross-reference just because it's not in the file that owns the
- * numbering. */
-function applyStepRenumberMap(text, map) {
-  const mapNum = (n) => (map.has(n) ? map.get(n) : n);
-  return text.replace(STEP_REF_RE, (whole, n1, a1, rangePart, n2, a2) => {
-    const isPlural = /^Steps\b/.test(whole);
-    let out = `Step${isPlural ? 's' : ''} ${mapNum(Number(n1))}${a1 || ''}`;
-    if (rangePart) {
-      out += `–${mapNum(Number(n2))}${a2 || ''}`;
+/** Every "## Step(s) N — Title" header in `text`, in document order, as
+ * `{ label, ids, title, layer }` — `label` as written ("12", "21a", "16–17"), `ids` every step ID
+ * it covers (both ends of a range), and `layer` the WAYPOINT:OPTIONAL layer the header sits inside
+ * in a template (null for a step every project has, and always null in a generated file). Step
+ * numbers are fixed IDs, never renumbered, so a template's headers are the catalogue every
+ * generated SKILL.md is checked against. */
+function parseStepHeaders(text) {
+  const headers = [];
+  let layer = null;
+  for (const line of text.split('\n')) {
+    const hm = line.match(STEP_HEADER_LINE_RE);
+    if (hm) {
+      const ids = hm[2] ? [hm[1], hm[2]] : [hm[1]];
+      headers.push({ label: ids.join('–'), ids, title: hm[3], layer });
     }
-    return out;
-  });
+    // Markers can open and close on the same line (inline fragments), so track them in order.
+    let m;
+    OPTIONAL_TOKEN_RE.lastIndex = 0;
+    while ((m = OPTIONAL_TOKEN_RE.exec(line))) {
+      layer = m[2] !== undefined ? m[2] : null;
+    }
+  }
+  return headers;
 }
 
-/** Convenience wrapper for the common case: renumber a SKILL.md against its own headers. */
-function renumberSkillSteps(text) {
-  return applyStepRenumberMap(text, computeStepRenumberMap(text));
+/** Splits one STEP_REF_RE match into `{ ids, multi }`: a range ("9–11") yields its two ends, a
+ * slash list ("5/6/7") every member, and `multi` says whether the mention names more than one step
+ * (in which case it means "whichever of these exist in this project"). */
+function parseStepRef(first, rest) {
+  if (!rest) return { ids: [first], multi: false };
+  if (rest.includes('/')) {
+    return { ids: [first, ...rest.split('/').map((s) => s.trim()).filter(Boolean)], multi: true };
+  }
+  return { ids: [first, rest.replace(/^\s*[–-]\s*/, '')], multi: true };
 }
 
 /** Returns the step label ("12", "20", "21a", ...) active in `skillText` at the point a
@@ -168,10 +163,8 @@ module.exports = {
   resolveOptionalBlocks,
   stripGeneratorComments,
   KNOWN_LAYERS,
-  findSurvivorSteps,
-  computeStepRenumberMap,
-  applyStepRenumberMap,
-  renumberSkillSteps,
+  parseStepHeaders,
+  parseStepRef,
   findAgentSpawnStep,
   STEP_REF_RE,
 };

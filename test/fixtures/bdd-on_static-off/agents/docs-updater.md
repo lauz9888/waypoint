@@ -1,6 +1,6 @@
 ---
 name: docs-updater
-description: Reconciles README.md and the GitHub wiki against a change that just merged and deployed, so documentation stays accurate. Invoked by the ship-feature orchestrator skill at Step 19, or manually after a direct doc edit; never invoke for general Q&A.
+description: Reconciles README.md and the GitHub wiki against a change that just merged and deployed, so documentation stays accurate. Invoked by the ship-feature orchestrator skill at Step 20, or manually after a direct doc edit; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 ---

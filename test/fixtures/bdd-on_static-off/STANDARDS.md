@@ -199,7 +199,7 @@ Development and CI both target **Node 20** (`package.json`'s `engines` field,
 The periodic quality report (`quality-reporter`, weekly + monthly rollups of release velocity,
 defect density, shift-left analysis, and requirement delivery time) runs automatically every
 **10** successful releases to live (tracked in `reports/.release-count`,
-incremented at Step 20a), in addition to being triggerable any time via the `/quality-report`
+incremented at Step 21a), in addition to being triggerable any time via the `/quality-report`
 skill.
 
 ## Security hygiene checklist

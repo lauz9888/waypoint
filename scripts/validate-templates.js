@@ -14,7 +14,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { findSurvivorSteps, findAgentSpawnStep, STEP_REF_RE } = require('./lib/template-transform');
+const { parseStepHeaders, parseStepRef, findAgentSpawnStep, STEP_REF_RE } = require('./lib/template-transform');
+
+// The template's step headers are the catalogue of fixed step IDs every concrete SKILL.md is
+// checked against.
+const TEMPLATE_SKILL = path.resolve(__dirname, '..', '.claude', 'skills', 'ship-feature', 'SKILL.md');
 
 const ALL_AGENTS = [
   'requirements-analyst',
@@ -77,30 +81,66 @@ function validate(dir, config) {
     }
   }
 
-  // 6, 8: every Step reference resolves to a real header; step sequence is contiguous.
+  // 6, 8: step numbers are fixed IDs. Every header is the template's step with the same number
+  // and title (identity, not just existence — a renumbered step fails here), exactly the steps of
+  // enabled layers are present, and every step mention in every file resolves.
   const skillPath = path.join(dir, 'skills', 'ship-feature', 'SKILL.md');
   const skillText = readIfExists(skillPath);
   if (!skillText) {
     failures.push(`skills/ship-feature/SKILL.md missing`);
   } else {
-    const survivors = [...findSurvivorSteps(skillText)].sort((a, b) => a - b);
-    const expectedCount = survivors.length ? survivors[survivors.length - 1] : 0;
-    if (survivors.some((n, idx) => n !== idx + 1)) {
-      failures.push(
-        `skills/ship-feature/SKILL.md: step headers aren't a contiguous 1..${expectedCount} sequence — found [${survivors.join(', ')}]`
-      );
+    const catalogue = parseStepHeaders(fs.readFileSync(TEMPLATE_SKILL, 'utf8'));
+    const byLabel = new Map(catalogue.map((h) => [h.label, h]));
+    const headers = parseStepHeaders(skillText);
+    for (const h of headers) {
+      const canonical = byLabel.get(h.label);
+      if (!canonical) {
+        failures.push(`skills/ship-feature/SKILL.md: "Step ${h.label}" isn't a Waypoint step ID`);
+      } else if (canonical.title !== h.title) {
+        failures.push(
+          `skills/ship-feature/SKILL.md: Step ${h.label} is titled "${h.title}" but Waypoint's Step ${h.label} is "${canonical.title}" — renumbered?`
+        );
+      } else if (canonical.layer && !config.layers[canonical.layer]) {
+        failures.push(`skills/ship-feature/SKILL.md: Step ${h.label} belongs to the disabled ${canonical.layer} layer`);
+      }
     }
-    const survivorSet = new Set(survivors);
-    let m;
-    STEP_REF_RE.lastIndex = 0;
-    while ((m = STEP_REF_RE.exec(skillText))) {
-      const [, n1, , rangePart, n2] = m;
-      if (!survivorSet.has(Number(n1))) {
-        failures.push(`skills/ship-feature/SKILL.md: reference to Step ${n1} has no matching header`);
+    const presentLabels = headers.map((h) => h.label);
+    for (const h of catalogue) {
+      if ((!h.layer || config.layers[h.layer]) && !presentLabels.includes(h.label)) {
+        failures.push(`skills/ship-feature/SKILL.md: Step ${h.label} ("${h.title}") is missing`);
       }
-      if (rangePart && !survivorSet.has(Number(n2))) {
-        failures.push(`skills/ship-feature/SKILL.md: reference to Step ${n2} has no matching header`);
-      }
+    }
+    const catalogueOrder = catalogue.map((h) => h.label);
+    const positions = presentLabels.map((l) => catalogueOrder.indexOf(l)).filter((i) => i >= 0);
+    if (positions.some((pos, idx) => idx > 0 && pos < positions[idx - 1])) {
+      failures.push(`skills/ship-feature/SKILL.md: step headers are out of order — found [${presentLabels.join(', ')}]`);
+    }
+
+    // A single-step mention must name a step present here; a range or list ("Steps 9–11",
+    // "Step 5/6/7") means whichever of them exist, so it may also name a disabled layer's step.
+    const presentIds = new Set(headers.flatMap((h) => h.ids));
+    const stepLayer = new Map(catalogue.flatMap((h) => h.ids.map((id) => [id, h.layer])));
+    for (const file of mdFiles) {
+      const rel = path.relative(dir, file);
+      const lines = fs.readFileSync(file, 'utf8').split('\n');
+      lines.forEach((line, idx) => {
+        let m;
+        STEP_REF_RE.lastIndex = 0;
+        while ((m = STEP_REF_RE.exec(line))) {
+          const { ids, multi } = parseStepRef(m[1], m[2]);
+          for (const id of ids) {
+            if (presentIds.has(id)) continue;
+            if (!stepLayer.has(id)) {
+              failures.push(`${rel}:${idx + 1}: "${m[0].trim()}" names Step ${id}, which isn't a Waypoint step ID`);
+            } else if (!multi) {
+              failures.push(`${rel}:${idx + 1}: "${m[0].trim()}" names Step ${id}, which isn't in this SKILL.md`);
+            }
+          }
+          if (multi && !ids.some((id) => presentIds.has(id))) {
+            failures.push(`${rel}:${idx + 1}: "${m[0].trim()}" names no step that's in this SKILL.md`);
+          }
+        }
+      });
     }
 
     // 9: disabled-layer script/label mentions absent when off, present when on.

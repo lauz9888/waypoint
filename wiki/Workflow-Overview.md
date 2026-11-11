@@ -264,19 +264,23 @@ reads those templates, inspects *your* project, and writes out a concrete, liter
 From then on, your project's copy is yours — edit it freely, it has no ongoing link back to this
 repository. See the [User Guide](User-Guide) to actually do this.
 
-The mechanical part of that generation — placeholder substitution, optional-layer resolution, step
-renumbering — is checked in CI (`scripts/run-fixture-tests.js`, `.github/workflows/validate-templates.yml`
-in this repo) against three synthetic pipeline variants plus `examples/throughline` itself, so a
-template edit that breaks a generated pipeline's internal consistency (a dangling `Step N`
-reference, a leftover placeholder, the wrong agent-file set for a layer combination, an
-unbalanced/unknown `WAYPOINT:OPTIONAL` block) fails a build instead of only surfacing the next
-time someone runs `waypoint-init` for real. Two things it deliberately does *not* check: whether a
+Step numbers are fixed IDs: every Waypoint project uses the same number for the same step, and
+generation never renumbers them. A project without an optional layer just has a gap where that
+layer's steps would be (no Steps 6 and 10 without BDD, no Step 13 without the path-prefixed deploy
+layer).
+
+The mechanical part of that generation — placeholder substitution, optional-layer resolution, and
+the step-number rules — is checked in CI (`scripts/run-fixture-tests.js`,
+`.github/workflows/validate-templates.yml` in this repo) against four synthetic pipeline variants
+plus `examples/throughline` itself. A template edit that breaks a generated pipeline's internal
+consistency fails a build instead of only surfacing the next time someone runs `waypoint-init` for
+real: a dangling `Step N` reference, a step whose number and title don't match the template's, a
+leftover placeholder, the wrong agent-file set for a layer combination, or an unbalanced/unknown
+`WAYPOINT:OPTIONAL` block. Two things it deliberately does *not* check: whether a
 `{{STACK_FACTS}}` block's real, LLM-written prose is *good* (that still needs a human/LLM reading
-the generated output, same as before), and whether a `Step N` reference that survives renumbering
-still points at the *same concept* it did before — the check is that the number exists, not that
-it means what it used to mean, so a stale reference that happens to land on a different real step
-after renumbering wouldn't be caught. See `scripts/README.md` for the full breakdown, and if
-you're extending the templates.
+the generated output, same as before), and whether a template author wrote the step number they
+meant — a mention of Step 12 where Step 15 was intended still passes, because Step 12 exists. See
+`scripts/README.md` for the full breakdown if you're extending the templates.
 
 ## A hypothetical example
 

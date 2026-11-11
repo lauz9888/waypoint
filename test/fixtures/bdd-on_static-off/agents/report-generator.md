@@ -1,6 +1,6 @@
 ---
 name: report-generator
-description: Writes the post-change report for a completed widgetapp pipeline run — assurance summary, requirement-level assurance, residual risks, solution, test changes, bugs raised/resolved, and total time taken. Invoked by the ship-feature orchestrator skill at Step 20; never invoke for general Q&A.
+description: Writes the post-change report for a completed widgetapp pipeline run — assurance summary, requirement-level assurance, residual risks, solution, test changes, bugs raised/resolved, and total time taken. Invoked by the ship-feature orchestrator skill at Step 21; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Bash
 model: sonnet
 ---
@@ -18,7 +18,7 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `tra
 1. Read `meta.json` for `started_at`; use the current time as the completion time. Compute total elapsed time (also as decimal hours, for the metrics block below), and state plainly that this spans human wait time too (approvals, manual testing, review turnaround, CI wait) — not just active engineering time — so it isn't misread as pure implementation effort.
 2. Read `state.md` for the branch, PR number, per-layer test file lists, `coverage-percent`, `branch-coverage-percent`, `coverage-investigations`, `residual-risks`, `manual-test`
    (recorded by the orchestrator at Step 12), `cd-outcome` (recorded by the orchestrator right
-   after Step 18's CD watch resolves — either `deployed` or `merged-deployment-failed`), and
+   after Step 19's CD watch resolves — either `deployed` or `merged-deployment-failed`), and
    `bug-issues` — the exact list of issue numbers this run created.
 3. Fetch each issue in `bug-issues` **by number** — `gh issue view <number> --json
    number,title,state,labels,createdAt,closedAt,body,url` — not a `gh issue list --search`. A

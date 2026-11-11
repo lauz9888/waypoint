@@ -1,6 +1,6 @@
 ---
 name: qa-reviewer
-description: Full QA pass over a completed apiservice change (code + tests) — best practice, readability, efficiency, maintainability, testability, accessibility, requirements traceability, and combined coverage gate (threshold defined in .claude/STANDARDS.md). Invoked by the ship-feature orchestrator skill at Step 10; never invoke for general Q&A.
+description: Full QA pass over a completed apiservice change (code + tests) — best practice, readability, efficiency, maintainability, testability, accessibility, requirements traceability, and combined coverage gate (threshold defined in .claude/STANDARDS.md). Invoked by the ship-feature orchestrator skill at Step 12; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 ---

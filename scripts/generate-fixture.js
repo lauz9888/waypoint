@@ -4,7 +4,7 @@
 /**
  * Generates a concrete fixture from Waypoint's .claude/ templates, the same mechanical way a
  * real waypoint-init run would (placeholder substitution, optional-layer resolution, generator
- * comment stripping, SKILL.md step renumbering) — everything EXCEPT writing real STACK_FACTS
+ * comment stripping) — everything EXCEPT writing real STACK_FACTS
  * prose, which needs an LLM that actually knows a real stack. See scripts/README.md.
  *
  * Usage: node scripts/generate-fixture.js <config.json> <outputDir>
@@ -18,8 +18,6 @@ const {
   validateOptionalBlocks,
   resolveOptionalBlocks,
   stripGeneratorComments,
-  computeStepRenumberMap,
-  applyStepRenumberMap,
 } = require('./lib/template-transform');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -77,20 +75,12 @@ function generate(configPath, outputDir) {
     filesToProcess.push(path.join('agents', agentFile));
   }
 
-  // Pass 1: resolve everything except step numbers, for every file.
+  // Step numbers are fixed IDs, so there's no renumbering pass: a disabled layer's steps just
+  // leave a gap (see TEMPLATE_CONVENTIONS.md's "Step numbers" section).
   const transformed = new Map();
   for (const relPath of filesToProcess) {
     const srcPath = path.join(TEMPLATE_ROOT, relPath);
     transformed.set(relPath, transformFile(fs.readFileSync(srcPath, 'utf8'), config, relPath));
-  }
-
-  // Pass 2: SKILL.md's own headers define the renumbering map (computed only after its
-  // disabled-layer sections are already gone) — then apply that SAME map to every file, not
-  // just SKILL.md, since docs-updater.md/report-generator.md/qa-reviewer.md/quality-reporter.md
-  // frontmatter and STANDARDS.md all cross-reference specific step numbers too.
-  const renumberMap = computeStepRenumberMap(transformed.get(SKILL_REL));
-  for (const [relPath, text] of transformed) {
-    transformed.set(relPath, applyStepRenumberMap(text, renumberMap));
   }
 
   fs.rmSync(outputDir, { recursive: true, force: true });

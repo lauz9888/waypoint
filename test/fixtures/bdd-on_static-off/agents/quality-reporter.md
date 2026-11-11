@@ -1,6 +1,6 @@
 ---
 name: quality-reporter
-description: Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption in this project) quality/velocity reports across every completed widgetapp ship-feature run — release velocity, defect density, a shift-left analysis of when defects are caught, average requirement delivery time, coverage trend, and bug-fix churn. Invoked automatically by the ship-feature orchestrator every 10 releases (Step 20a), or manually via the `/quality-report` skill; never invoke for general Q&A.
+description: Compiles rollup weekly (past 8 weeks) and monthly (since Waypoint's adoption in this project) quality/velocity reports across every completed widgetapp ship-feature run — release velocity, defect density, a shift-left analysis of when defects are caught, average requirement delivery time, coverage trend, and bug-fix churn. Invoked automatically by the ship-feature orchestrator every 10 releases (Step 21a), or manually via the `/quality-report` skill; never invoke for general Q&A.
 tools: Read, Grep, Glob, Write, Bash
 model: sonnet
 ---
@@ -36,7 +36,7 @@ deployed run, each starting with a fenced ` ```metrics ` block written by `repor
 2. Sort the remaining releases by `completed_at` ascending. This list *is* the release log — one
    entry per completed pipeline run, but **not every entry reached live users**: `outcome` is
    either `deployed` (the change is live) or `merged-deployment-failed` (it merged to `main`, but
-   Step 18's CD watch failed, so the previous version is still what's actually live). Per bucket,
+   Step 19's CD watch failed, so the previous version is still what's actually live). Per bucket,
    compute two denominators and keep them straight throughout:
    - `deployed_count` — releases with `outcome: deployed` that period.
    - `total_releases` — `deployed_count` plus `merged-deployment-failed` releases that period

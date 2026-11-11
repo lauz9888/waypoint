@@ -137,30 +137,12 @@ For each template file at the source, produce the target project's concrete vers
      delete the entire block including its content.
    - Delete any `<!-- Generator: ... -->` or `<!-- Generator note: ... -->` HTML comments — they're
      instructions to you, not content for the generated file.
-   - In `SKILL.md` specifically: after removing disabled-layer steps (Step 6 if BDD is off, Step
-     13 if `STATIC_SPA_DEPLOY` is off — the `STORYBOOK` layer's Step 11a is an out-of-band "a" step and
-     never shifts numbering; it just follows Step 11's new number, e.g. "10a" if BDD is off), first write out an explicit old-step→new-step mapping
-     table for yourself (e.g. "5→5, 7→6, 8→7, 9→8, 11→9, 12→10, 14→11, ...") before touching any
-     prose — renumbering by feel invites exactly the kind of off-by-one error this table exists
-     to prevent. Include Step 21a in the table as "<whatever Post-change report/Step 21 maps
-     to>a" (e.g. if Step 21 maps to 18, Step 21a becomes "18a") — it's a fixed addendum
-     immediately after Post-change report, not a fixed literal "21a"; see that step's own
-     `<!-- Generator note -->` for what else needs updating alongside its header. Then, using
-     that table, renumber every remaining `## Step N` header and fix every cross-reference to a
-     step number throughout the file — the Pre-authorization section ("Steps 4, 15, or 22"), the
-     "Artifacts & state" and "Accessibility" conventions' step mentions, Step 12's routing back to
-     "Steps 9–11", Step 14's and Step 18's references to the same range, Step 19's/22's
-     back-references to the merge step, the "see Step 21a" mention inside Step 21, the "if Step
-     21a triggered..." mention in the final Step 22 summary, and the frontmatter `description`'s
-     step count if it names one. Do this by reading the whole file and reasoning about each
-     reference against your mapping table, not with a blind find-replace — the numbers appear in
-     prose, not a table in the source file itself.
-   - **Every other file has step-number references too, not just `SKILL.md`.** Using the same
-     mapping table: `qa-reviewer.md`, `docs-updater.md`, `report-generator.md`, and
-     `quality-reporter.md`'s frontmatter `description` fields each name the specific step they're
-     invoked at ("Invoked... at Step 12/20/21/21a" in the throughline example) — update these to
-     match `SKILL.md`'s new numbering (`quality-reporter.md`'s uses the renumbered "<N>a" form).
-     Grep every generated file for `Step [0-9]` as a final check that none were missed.
+   - **Never renumber steps.** Step numbers are fixed IDs shared by every Waypoint project (see
+     `TEMPLATE_CONVENTIONS.md`'s "Step numbers" section). Removing a disabled layer's step — Steps
+     6 and 10 if BDD is off, Step 13 if `STATIC_SPA_DEPLOY` is off, Step 11a if `STORYBOOK` is off
+     — leaves a gap in the sequence, by design. Every remaining `## Step N` header and every
+     `Step N` mention, in `SKILL.md` and in every other generated file (agent frontmatter such as
+     "Invoked... at Step 12", `STANDARDS.md`), stays exactly as the template writes it.
 2. **`docs/adr/README.md`**: copy verbatim from the template source — it has no placeholders.
 3. **`.gitignore`**: if the target project has one, ensure `.workflow/` is present (append if
    missing, don't touch anything else in the file). If there's no `.gitignore` at all, create one
@@ -172,16 +154,15 @@ Before reporting success:
 
 1. `Grep` every file you just wrote for `{{` and `WAYPOINT:` — either match means a placeholder
    or marker survived generation.
-2. In `SKILL.md`, list every `## Step N` header (including `## Step <N>a`) and every
-   `Step N`/`Steps N–M`/`Step <N>a` mention in the body (`Grep -o 'Steps? [0-9]+[a-z]?(–[0-9]+)?'`
-   or equivalent), and check each body mention against your Step 5 mapping table: does it point
-   at the step that actually does what the prose says it does? A number that's merely in-range
-   (≤ the highest header) can still be wrong — e.g. pointing at the QA step when it meant the
-   merge step — so re-derive what each reference is *supposed* to mean from the throughline
-   example's original wording, not just check the digit is plausible.
-3. `Grep` every generated `.claude/agents/*.md` **and** `.claude/skills/quality-report/SKILL.md`
-   for `Step [0-9]` too — frontmatter descriptions carry step references independently of
-   `ship-feature/SKILL.md` and are easy to miss (see Step 5's note).
+2. List every `## Step N` header (including `## Step <N>a`) in the generated `SKILL.md` and
+   compare it with the template's: each header must appear in the template with the same number
+   and the same title, and the only template headers missing must be the steps of disabled
+   layers (see Step 5). A different number or title means something was renumbered — undo it.
+3. `Grep` every generated file — `SKILL.md`, `.claude/agents/*.md`,
+   `.claude/skills/quality-report/SKILL.md`, `STANDARDS.md` — for `Steps? [0-9]+[a-z]?`. A mention
+   of a single step must name a header that exists in the generated `SKILL.md`; a mention of
+   several steps (a range like "Steps 9–11" or a list like "Step 5/6/7") may include a disabled
+   layer's step, since it means whichever of them exist.
 
 4. **Coverage baseline**, only if `test:coverage:merge` already exists: run it once (it may take
    a while — run it in the background) and apply `STANDARDS.md`'s "Validity checks" and

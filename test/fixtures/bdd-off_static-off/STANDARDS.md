@@ -43,7 +43,7 @@ The combined **statement** coverage and the combined **branch** coverage across 
 layers (unit + e2e, per
 `yarn run test:coverage:merge`) must be **at least 90%** (statements)
 and **at least 85%** (branches) before a change passes `qa-reviewer`'s
-Step 10 gate or CI's `coverage-merge` job. `ci.yml`'s `coverage-merge` job mirrors both values as
+Step 12 gate or CI's `coverage-merge` job. `ci.yml`'s `coverage-merge` job mirrors both values as
 env vars (`COVERAGE_THRESHOLD`, `BRANCH_COVERAGE_THRESHOLD`) — update both places together.
 
 These thresholds are a floor, not a complete quality measure — a coverage percentage can be
@@ -142,7 +142,7 @@ regardless of the headline number:
 
 Patterns that are often — but not necessarily — symptoms of broken instrumentation. On their own
 they never block the gate and never change the exit code; they trigger an investigation
-(`qa-reviewer` investigates each one at Step 10) whose outcome is one of: **confirmed invalid**
+(`qa-reviewer` investigates each one at Step 12) whose outcome is one of: **confirmed invalid**
 (the investigation found objective evidence — that evidence is then a validity failure above),
 **explained** (with the reason recorded), or **unresolved** (raised for follow-up without
 blocking):
@@ -199,7 +199,7 @@ Development and CI both target **Node 20** (`package.json`'s `engines` field,
 The periodic quality report (`quality-reporter`, weekly + monthly rollups of release velocity,
 defect density, shift-left analysis, and requirement delivery time) runs automatically every
 **10** successful releases to live (tracked in `reports/.release-count`,
-incremented at Step 18a), in addition to being triggerable any time via the `/quality-report`
+incremented at Step 21a), in addition to being triggerable any time via the `/quality-report`
 skill.
 
 ## Security hygiene checklist
@@ -250,7 +250,7 @@ tag or redundant. Existing tests the run doesn't touch don't need retro-tagging.
 ### Traceability record
 
 The orchestrator keeps `.workflow/<slug>/traceability.md` (gitignored like the rest of
-`.workflow/`), built at Step 6's trace check from the test authors' `PURPOSE:` lines and updated
+`.workflow/`), built at Step 7's trace check from the test authors' `PURPOSE:` lines and updated
 whenever tests or requirements change afterwards:
 
 - **Requirements** — one row per `REQ-NNN`: criticality, design change(s), covering tests, QA verdict.

@@ -1,9 +1,9 @@
 # Template validation tooling
 
 A deterministic regression suite for the *mechanical* parts of what `waypoint-init` does —
-placeholder substitution, `WAYPOINT:OPTIONAL` layer resolution, generator-comment stripping, and
-`SKILL.md` step renumbering (including cross-file "Step N" references in agent frontmatter and
-`STANDARDS.md`). It exists because that transformation logic was previously entrusted entirely to
+placeholder substitution, `WAYPOINT:OPTIONAL` layer resolution, and generator-comment stripping,
+plus the step-number rules (`SKILL.md` steps are fixed IDs that generation never renumbers — see
+`TEMPLATE_CONVENTIONS.md`'s "Step numbers" section). It exists because that transformation logic was previously entrusted entirely to
 an LLM's reasoning with no automated check that the generated pipeline variants (BDD ×
 static-deploy × Storybook) come out internally consistent.
 
@@ -13,23 +13,21 @@ static-deploy × Storybook) come out internally consistent.
 block in the source templates is well-formed before generation even starts (matched start/end, no
 nesting, a known layer name — `validateOptionalBlocks` in `lib/template-transform.js`); the right
 agent-file set exists per enabled layer (`bdd-test-author.md` present only when BDD is on); every
-`Step N` / `Steps N–M` / `Step Na` reference — in `SKILL.md` and every other generated file —
-**resolves to a step number that exists** as a header, and the step sequence is contiguous with no
-gaps; each of `qa-reviewer`/`docs-updater`/`report-generator`/`quality-reporter`'s frontmatter
+`## Step N` header in the generated `SKILL.md` **is the template's step with that same number and
+title** (so a renumbered step fails, not just a missing one), in template order, with exactly the
+steps of disabled layers absent; every `Step N` / `Step Na` mention in every generated file names
+a step that exists, and every range or list (`Steps N–M`, `Step 5/6/7`) names only Waypoint step
+IDs, at least one of them present; each of `qa-reviewer`/`docs-updater`/`report-generator`/`quality-reporter`'s frontmatter
 agrees with `SKILL.md` about which step actually spawns it; disabled-layer script/label mentions
 (`test:bdd`, `deploy-path`, `test:storybook`) are absent when off and present when on.
 
 **Does not prove:**
 
-- That a `Step N` reference still means the *same thing* it meant before renumbering. The check
-  is existence, not identity: if an edit accidentally leaves a stale reference to a step number
-  that used to mean one thing, and renumbering happens to reassign that same number to a
-  *different* surviving step, the reference now silently points at the wrong concept — a plain
-  "does Step 6 exist?" check can't tell the difference, because after renumbering it genuinely
-  does exist, just not as what the sentence meant. Nothing here currently catches that; it would
-  need either annotating each cross-reference with what it's semantically pointing at (e.g.
-  symbolic markers like `{{STEP:QA}}` resolved to a number at generation time, instead of writing
-  raw numbers that have to survive renumbering unchanged) or a reviewer reading the diff by eye.
+- That a `Step N` mention names the step its author *meant*. Since numbers are never reassigned,
+  a mention can't drift onto a different step through generation; but a template edit that
+  writes the wrong number in the first place (e.g. "Step 12" where the merge step, Step 15, was
+  meant) still passes, because Step 12 exists. Catching that needs a reviewer reading the
+  template diff.
 - That a real `{{STACK_FACTS: <layer>}}` block, once `waypoint-init` fills it in with real prose
   about a real stack, is *good* prose — accurate framework names, correct file locations, a
   sensible accessibility-scan call pattern. That still needs the judgment `waypoint-init` itself
@@ -51,7 +49,7 @@ prose polish.
 
 - `lib/template-transform.js` — the transform primitives (`substitutePlaceholders`,
   `resolveStackFacts`, `resolveOptionalBlocks`, `stripGeneratorComments`,
-  `computeStepRenumberMap`/`applyStepRenumberMap`, `findAgentSpawnStep`). No dependencies, no
+  `parseStepHeaders`/`parseStepRef`, `findAgentSpawnStep`). No dependencies, no
   I/O — pure string-in, string-out functions, unit-testable in isolation if this ever grows real
   tests of its own.
 - `generate-fixture.js <config.json> <outputDir>` — runs the templates in `.claude/` through the
