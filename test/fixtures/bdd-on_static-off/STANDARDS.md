@@ -211,3 +211,92 @@ Applied by `qa-reviewer.md` to every change, and by anyone reviewing a PR manual
   assignment from user input without escaping/sanitization).
 - `npm audit --omit=dev` reports no high/critical vulnerabilities in any dependency
   touched by the change (mirrors the CI `audit` job's high/critical-severity gate).
+
+## Requirements traceability
+
+The approved `requirements.md` is the authoritative source for every decision about intended
+behavior. Agents that make such decisions (`solution-designer`/`-reviewer`, the test authors,
+`implementer`, `bug-fixer`, `qa-reviewer`) must show how their output respects it — by citing IDs,
+not by re-reading the whole document at steps that don't decide behavior.
+
+### Identifiers
+
+- **Requirements:** `REQ-NNN` (zero-padded, e.g. `REQ-007`), assigned by `requirements-analyst`.
+  Stable for the life of the run: never renumbered or reused. An amendment appends the next unused
+  ID; a dropped requirement stays in place marked `(withdrawn: <reason>)`.
+- **Risks:** `RISK-NN`, assigned by `solution-designer` in `design.md`'s "Change impact" section —
+  existing behavior this change could break, or a technical risk worth a test of its own.
+- Inside `.workflow/<slug>/` documents, bare IDs are fine. In code (test names/comments), qualify
+  them with the run's tracking issue so they stay unambiguous after `.workflow/` is gone and the
+  next run starts its own `REQ-001`: `[#<tracking-issue>:REQ-007]`, `[#<tracking-issue>:RISK-02]`.
+  The tracking issue body holds the approved `requirements.md`, and is updated whenever the
+  requirements are re-approved.
+
+### Test purpose (bidirectional traceability)
+
+Every test case added or changed in a run has at least one stated purpose, tagged in its name or
+an adjacent comment:
+
+- `[#<tracking-issue>:REQ-NNN]` — verifies an approved requirement;
+- `[#<tracking-issue>:RISK-NN]` — guards a documented risk from `design.md`;
+- `[regression #<bug-issue>]` — pins a defect fixed in this or an earlier run.
+
+Forward: every non-withdrawn requirement has at least one test whose assertions would fail if the
+requirement weren't met (or is listed in `design.md` as not automatable, with a reason the
+solution reviewer accepted). Backward: a new or changed test with no purpose, or whose purpose and
+assertions duplicate another test's without a distinct risk, is flagged — it's either missing its
+tag or redundant. Existing tests the run doesn't touch don't need retro-tagging.
+
+### Traceability record
+
+The orchestrator keeps `.workflow/<slug>/traceability.md` (gitignored like the rest of
+`.workflow/`), built at Step 7's trace check from the test authors' `PURPOSE:` lines and updated
+whenever tests or requirements change afterwards:
+
+- **Requirements** — one row per `REQ-NNN`: criticality, design change(s), covering tests, QA verdict.
+- **Risks** — one row per `RISK-NN`: source, covering tests (or `accepted: <reason>`), QA verdict.
+- **Tests** — one row per test file added/changed: purpose tags.
+- **Clarifications** — one row per resolved clarification (see below): who raised it, the
+  question, the decision, material yes/no, and where it was recorded.
+- **Residual risks** — anything QA judged significant and unresolved.
+
+### Clarifications
+
+An agent that finds the approved requirements ambiguous, contradictory, or insufficient for a
+behavior it must decide never invents a business rule. It stops and reports:
+
+```
+STATUS: needs-clarification
+CLARIFICATION:
+- requirement: <REQ-NNN, or "none — gap">
+- question: <what's undecided>
+- options: <the plausible readings>
+- proposed: <which one, and why>
+- material: <yes | no> — <why>
+```
+
+**Material** means the answer changes behavior a user, integration, or stored data would observe
+in a way the approved requirements don't already settle. Material clarifications reopen the
+requirements gate (`requirements-analyst` amends, the user re-approves). Non-material ones — a
+technical detail that any reading of the requirements permits — are decided by the orchestrator
+(taking the proposed option unless it conflicts with `design.md`), recorded in the traceability
+record and in `design.md`'s "Clarifications" list, and need no human. When unsure, treat it as
+material.
+
+### Protecting test expectations
+
+A failing test is evidence, not an obstacle. When fixing a defect, an agent preserves each test's
+intent: it fixes the implementation, not the expectation. Changing what a test asserts — removing
+or loosening an assertion, editing an expected value, skipping/deleting a test, or widening a
+tolerance or timeout — is a **test-expectation change**, allowed only when the test contradicts an
+approved requirement or tests the wrong thing, and only with:
+
+- a justification citing the requirement (or risk) the original expectation got wrong, reported in
+  the agent's `TEST_CHANGES:` list; and
+- an independent review by a fresh `solution-reviewer` before the change is kept (see `SKILL.md`'s
+  "Protecting test expectations" convention). A rejected change is reverted and the defect goes
+  back to the implementation.
+
+Purely mechanical test edits that keep every assertion identical (a renamed import, an updated
+selector for an element that still has the same role and name) aren't expectation changes, but are
+still listed in `TEST_CHANGES:` so the reviewer can confirm that.

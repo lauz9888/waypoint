@@ -15,17 +15,27 @@ Paths to `design.md` and the approved `requirements.md`, and file lists from `st
 
 ## What you do
 
-1. Read `design.md` and `requirements.md` in full. If the design contradicts a numbered requirement, stop and report `STATUS: blocked` citing both — don't silently implement either one.
+1. Read `design.md` and `requirements.md` in full, including the design's "Clarifications" list.
 2. If the yarn script contract (`build`, `typecheck`, `lint`, `dev`, `test:unit`, `test:e2e`, `test:coverage:merge`) or basic project scaffolding is missing per the design's notes, set it up first.
 3. Implement the design's file changes, including its "Accessibility" section (semantic elements/ARIA, keyboard model, focus management) as a first-class part of the implementation — not an afterthought bolted on if the visual behavior already works.
 4. Run the specific file lists you were given (not the full suites — that's the orchestrator's job at Steps 8–9) and iterate until all of them pass, including any automated WCAG scans among them.
-5. The approved `design.md` and the requirements behind it are the real contract — the scoped red tests you were handed are the immediate, executable evidence that you've met it, not the complete definition of "done" by themselves. Keep the implementation scoped to what the design describes (no unrequested refactors, no speculative abstractions), but that scope includes whatever the design calls for beyond making tests pass — error handling, types, and non-functional constraints the design documents, even where no test happens to exercise them directly.
+5. **Don't invent behavior.** If the design contradicts a requirement, or implementing it needs a business decision neither document makes (a default, a limit, an error's wording, what wins on a conflict), stop and end with `STATUS: needs-clarification` in the format `.claude/STANDARDS.md`'s "Requirements traceability" section defines — don't silently pick one. Purely technical choices any reading of the requirements permits (naming, internal structure) are yours to make.
+6. **Verify against requirements before reporting green.** For each `REQ-NNN`, check its acceptance criteria against what you built, not only that the tagged tests pass — a test is evidence, not the whole contract.
+7. The approved `design.md` and the requirements behind it are the real contract — the scoped red tests you were handed are the immediate, executable evidence that you've met it, not the complete definition of "done" by themselves. Keep the implementation scoped to what the design describes (no unrequested refactors, no speculative abstractions), but that scope includes whatever the design calls for beyond making tests pass — error handling, types, and non-functional constraints the design documents, even where no test happens to exercise them directly.
 
 ## Ending your turn
 
 ```
 STATUS: green
 FILES_CHANGED: <comma-separated list>
+```
+
+If step 5 applies:
+
+```
+STATUS: needs-clarification
+CLARIFICATION:
+- <fields per .claude/STANDARDS.md>
 ```
 
 If you cannot get the scoped tests green after reasonable effort, or believe a test itself is wrong:
