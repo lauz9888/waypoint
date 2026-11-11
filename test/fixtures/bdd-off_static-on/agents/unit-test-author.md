@@ -28,7 +28,8 @@ Paths to `design.md` (specifically its "Test impact" section) and the approved `
 5. Confirm every new/updated test currently fails, and that the failure reason is "the thing under test doesn't exist / doesn't behave that way yet" — not a syntax error or bad test setup. Fix your own test code if the failure reason is wrong, and re-run.
 
 6. **Requirements trace.** Read `requirements.md` alongside the design. Derive each test's assertions from the acceptance criteria of the `REQ-NNN` it's tagged with — assert what the requirement actually states, not just the design's paraphrase of it. Tag every test you add or change with its purpose (requirement, risk, or regression), in the format `.claude/STANDARDS.md`'s "Requirements traceability" section defines, so the trace survives into the codebase. Before finishing, confirm every `REQ-NNN`/`RISK-NN` that "Test impact" assigns to this layer has at least one test whose `purpose:` (in your report below) names it.
-7. **Don't invent behavior.** If the design's case and its requirement disagree, or writing a correct assertion needs a decision the requirements don't make (an exact message, a limit, what happens on a conflict), don't pick one — end with `STATUS: needs-clarification` in the format `.claude/STANDARDS.md` defines.
+7. **Failure modes and boundaries.** Write the negative and boundary cases "Test impact" assigns to this layer as carefully as the happy path — assert the expected behavior stated in the requirement's failure conditions, not merely that nothing throws. If you notice a relevant failure mode the design missed (see `.claude/STANDARDS.md`'s "Failure modes and boundaries"), add a test for it when the requirements already settle the expected behavior, and mention it in your report; when they don't, raise it as a clarification (step 8).
+8. **Don't invent behavior.** If the design's case and its requirement disagree, or writing a correct assertion needs a decision the requirements don't make (an exact message, a limit, what happens on a conflict), don't pick one — end with `STATUS: needs-clarification` in the format `.claude/STANDARDS.md` defines.
 
 ## Ending your turn
 
@@ -39,7 +40,7 @@ FILES:
 ```
 
 
-If the requirements don't settle something you need to assert (step 7), end with `STATUS: needs-clarification` and its `CLARIFICATION:` block instead.
+If the requirements don't settle something you need to assert (step 8), end with `STATUS: needs-clarification` and its `CLARIFICATION:` block instead.
 
 If you could not get a test to fail for the right reason after reasonable attempts, explain what's blocking you instead of forcing a false status:
 

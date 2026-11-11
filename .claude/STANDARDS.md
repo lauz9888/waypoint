@@ -302,6 +302,38 @@ technical detail that any reading of the requirements permits — are decided by
 record and in `design.md`'s "Clarifications" list, and need no human. When unsure, treat it as
 material.
 
+### Failure modes and boundaries
+
+Happy paths are rarely where defects hide. For every requirement, consider these failure-mode
+categories and identify the ones **relevant** to it — not every conceivable edge case:
+
+- **Invalid input** — wrong type, out-of-range value, disallowed characters.
+- **Malformed but parseable data** — structurally valid but semantically wrong (e.g. stored JSON
+  that parses fine but is an array of objects missing required fields — a different risk from JSON
+  that fails to parse at all).
+- **Missing or empty data** — absent field, empty collection, first run with nothing stored.
+- **Boundary values** — zero, one, the maximum, just past the maximum, empty string.
+- **Repeated or concurrent actions** — double submit, the same action twice, two tabs.
+- **Interrupted operations** — reload/navigation/network loss mid-operation, partial writes.
+- **Persistence and dependency failures** — storage full or unavailable, a request failing or
+  timing out, an integration returning an error.
+
+A relevant failure mode whose expected behavior the requirements settle gets a test. One whose
+expected behavior they *don't* settle is a requirements question (an open question at Step 2, a
+clarification later) — never a behavior an agent picks. One judged not relevant is listed with a
+short reason, so the omission is a decision rather than an oversight.
+
+### Assertion effectiveness
+
+Coverage shows code ran, not that a test would notice it being wrong. The QA review asks: **which
+plausible incorrect implementations would still pass the current tests?** — for example an
+off-by-one at a boundary, a wrong default, a swapped condition, a write that's never persisted, or
+invalid items silently accepted. Pick a small number (at most five) that are material — tied to a
+`critical` requirement or a `RISK-NN` — and for each name the assertion that would catch it. One
+with no such assertion is a finding, not a hypothetical. Where it's cheap, prove it: apply the
+wrong implementation in a throwaway `git worktree`, run the relevant tests, and confirm they fail.
+Don't generate an open-ended list of hypotheticals.
+
 ### Protecting test expectations
 
 A failing test is evidence, not an obstacle. When fixing a defect, an agent preserves each test's

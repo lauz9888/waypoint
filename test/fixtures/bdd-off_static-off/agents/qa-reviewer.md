@@ -19,6 +19,8 @@ The diff for this change (`git diff main...HEAD`), `design.md`, `requirements.md
    - **Forward:** for each non-withdrawn `REQ-NNN`, find where the diff implements it and which test(s) verify it, and confirm those tests actually assert its acceptance criteria — not just that they're tagged. A requirement that is unimplemented, only partially implemented, contradicted by the diff, or implemented but not effectively verified is a finding. The exception is a requirement the design lists as not automatable: confirm it's met by reading the diff, and say so in `REQUIREMENTS:`. Do the same for each `RISK-NN` in `design.md` (its tests exist and would catch it, or it's explicitly accepted).
    - **Backward:** every test added or changed in the diff has a purpose tag (requirement, risk, or regression). A test with no purpose, or one whose purpose and assertions duplicate another test's without a distinct risk, is a finding (missing tag, or redundant). So is behavior in the diff that no requirement asks for (unrequested scope).
    - Don't fix these yourself — missing behavior needs a red test first, per this pipeline's test-first order. Report them via `STATUS: verification-gap`. Update `traceability.md`'s QA-verdict column with what you found either way.
+   - **Change impact:** compare the diff with `design.md`'s "Change impact" section. A file or component changed that the analysis didn't list, a data contract changed without the planned compatibility handling, or a listed regression test that was modified rather than kept green unchanged is a finding — the regression scope was wrong, so what else might be affected wasn't considered.
+   - **Assertion effectiveness:** apply `.claude/STANDARDS.md`'s "Assertion effectiveness" challenge — at most five material, plausible incorrect implementations, and for each the assertion that would catch it (proved in a throwaway worktree where cheap). Any that would survive the current tests is a finding. Record each in `ASSERTION_CHALLENGES` on whatever status you return.
 2. **Review code quality**: best practice, readability, efficiency, maintainability — for both implementation and test code. Fix issues directly (rename, simplify, dedupe, remove dead code) rather than just describing them, as long as the fix doesn't change behavior the tests lock in.
 3. **Review testability** — anything hard to test that should be restructured; anything tested at the wrong layer (e.g. a pure-logic case only covered by an e2e spec).
 4. **Review security hygiene** — check the diff against `.claude/STANDARDS.md`'s
@@ -63,7 +65,7 @@ If step 1 found anything — this takes precedence over `coverage-gap`, `changes
 ```
 STATUS: verification-gap
 FINDINGS:
-- <REQ-NNN | RISK-NN | test path> — <unimplemented | partial | contradicted | not effectively verified | test without purpose | redundant test | unrequested scope> — <evidence: file/line, or the test that should catch it and why it doesn't> — suspected cause: <implementation | missing or weak test | design | requirement itself unclear or wrong>
+- <REQ-NNN | RISK-NN | test path | changed file> — <unimplemented | partial | contradicted | not effectively verified | survives plausible wrong implementation: <which> | test without purpose | redundant test | unrequested scope | outside change impact> — <evidence: file/line, or the test that should catch it and why it doesn't> — suspected cause: <implementation | missing or weak test | design | requirement itself unclear or wrong>
 ```
 
 If a UI/interactive change is missing an automated WCAG scan (and it's not something you can add yourself — that's the test-author agents' job):
@@ -86,6 +88,8 @@ FINDINGS:
 COVERAGE_SIGNALS:
 - <as below>
 ```
+
+Every status that reports coverage also carries an `ASSERTION_CHALLENGES:` list (one line each: `<REQ-NNN | RISK-NN> — <plausible wrong implementation> — caught by: <test and assertion> | NOT caught` (proved | reasoned)) — `NOT caught` entries only appear on `verification-gap`.
 
 Every status below that reports coverage also carries a `COVERAGE_SIGNALS:` list — `none` if there were no investigation signals, otherwise one line per signal:
 
