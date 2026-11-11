@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "project": {
     "name": "throughline",
-    "summary": "a Vite-built PWA, deployed to GitHub Pages"
+    "summary": "A Vite-built PWA deployed to GitHub Pages under /throughline/"
   },
   "packageManager": "npm",
   "packageExec": "npx",
-  "runtimeVersion": "Node 20",
+  "runtimeVersion": "Node 22",
   "layers": {
     "BDD": true,
     "STATIC_SPA_DEPLOY": true,
-    "STORYBOOK": false
+    "STORYBOOK": true
   },
   "coverage": {
     "statements": 90,

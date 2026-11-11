@@ -58,8 +58,11 @@ say so plainly in your final report rather than silently complying or silently i
 Automated accessibility scans (per layer — see that layer's section of `.waypoint/stack.md` for
 which tool) must be scoped to exactly the tags in `.waypoint/config.json`'s `wcagTags`. Most
 a11y-scanning tools' APIs take them as an array, the shape the config stores them in; adjust the
-syntax only if the actual tool takes tags a different way. Use the configured value exactly,
-in one shared place in the test code, rather than writing a second literal that can drift from it.
+syntax only if the actual tool takes tags a different way. Use the configured value exactly. Where
+the project has no convention yet, keep it in one shared place in the test code rather than writing
+a literal per file that can drift; where the project already declares a `WCAG_TAGS`-style constant
+in each test file (`.waypoint/stack.md` says which), follow that convention, and every copy must
+equal `wcagTags` exactly — a change to `wcagTags` updates all of them.
 
 ## Combined coverage threshold
 
