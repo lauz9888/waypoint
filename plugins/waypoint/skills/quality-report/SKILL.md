@@ -12,7 +12,7 @@ in `reports/*.md`, shipped through a small housekeeping PR rather than a direct 
 0. If `.waypoint/config.json` doesn't exist, this project hasn't been set up — stop and tell the user to run `/waypoint:init` first.
 
 1. Spawn `Agent(subagent_type="waypoint:quality-reporter")`. It needs no input beyond the repo itself — it
-   reads every `reports/*.md` metrics block and `reports/.release-count` directly.
+   reads every `reports/*.md` metrics block directly and derives the release count from them.
 2. On `STATUS: complete`: open a small PR for the two new files, the same reviewed-not-direct-push
    convention `ship-feature`'s Step 21a uses for its own report/docs writes: `git checkout main &&
    git pull && git checkout -b quality-report/<date>`, `git add reports/metrics/ && git commit -m

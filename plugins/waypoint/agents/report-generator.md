@@ -19,7 +19,9 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `tra
 
 1. Read `meta.json` for `started_at`; use the current time as the completion time. Compute total elapsed time (also as decimal hours, for the metrics block below), and state plainly that this spans human wait time too (approvals, manual testing, review turnaround, CI wait) — not just active engineering time — so it isn't misread as pure implementation effort.
 2. Read `state.md` for the branch, PR number, per-layer test file lists, `coverage-percent`, `branch-coverage-percent`, `coverage-investigations`, `residual-risks`, `manual-test`
-   (recorded by the orchestrator at Step 12), `cd-outcome` (recorded by the orchestrator right
+   (recorded by the orchestrator at Step 12), `qa-approved-sha`, `manual-test-sha` (for the
+   assurance summary's QA-approval and manual-acceptance rows: count the commits between them with
+   `git rev-list --count <manual-test-sha>..<qa-approved-sha>` when both exist), `cd-outcome` (recorded by the orchestrator right
    after Step 19's CD watch resolves — either `deployed` or `merged-deployment-failed`), and
    `bug-issues` — the exact list of issue numbers this run created.
 3. Fetch each issue in `bug-issues` **by number** — `gh issue view <number> --json

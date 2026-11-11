@@ -246,9 +246,20 @@ update all of them together).
 
 The periodic quality report (`quality-reporter`, weekly + monthly rollups of release velocity,
 defect density, shift-left analysis, and requirement delivery time) runs automatically every
-`releaseReportCadence` (from `.waypoint/config.json`) successful releases to live (tracked in `reports/.release-count`,
-incremented at Step 21a), in addition to being triggerable any time via the `/waypoint:quality-report`
-skill.
+`releaseReportCadence` (from `.waypoint/config.json`) successful releases to live, checked at
+Step 21a, in addition to being triggerable any time via the `/waypoint:quality-report` skill.
+
+The release count isn't stored anywhere: it's derived from durable records. Each run's post-change
+report (`reports/<YYYY-MM-DD>-<slug>.md`) is that run's record. The **release count** is the number
+of those reports whose metrics block doesn't say `outcome: merged-deployment-failed` (a report
+older than the `outcome` field counts as deployed, the same rule `quality-reporter` uses). Concurrent
+runs each add their own file instead of incrementing a shared value, so neither can lose the
+other's release. Each periodic report records the release count it covers on a `releases-covered:
+<n>` line. A new periodic report is due when `floor(release count / cadence)` exceeds `floor(highest
+releases-covered / cadence)`. Comparing milestones like this, rather than requiring an exact
+multiple, means a milestone that concurrent runs both narrowly missed fires on the next run instead
+of being skipped. Earlier Waypoint versions kept a `reports/.release-count` counter file; it's no
+longer read, and Step 21a removes it.
 
 ## Security hygiene checklist
 
@@ -384,7 +395,12 @@ unresolved significant risk must stay visible even when every other line is exce
 | Risks (`RISK-NN`) tested / accepted | <tested> / <accepted> |
 | Unresolved significant risks | <count> (listed below the table) |
 | Clarifications (material / non-material) | <material> / <non-material> |
-| Manual acceptance | <passed | skipped: reason | pending> |
+| QA approval | <approved @ qa-approved-sha; revalidated <n> times after later changes; current at merge: yes/no> |
+| Manual acceptance | <passed @ manual-test-sha | skipped: reason | pending>; if the feature's diff changed after acceptance: `<n> later commits, QA-revalidated, not manually re-tested` |
+
+A later change that QA has revalidated still never reads as "manually tested": the manual-acceptance
+row says which version the user exercised, so an approval of one version isn't mistaken for an
+approval of another.
 
 ### Protecting test expectations
 
