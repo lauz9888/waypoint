@@ -7,7 +7,7 @@ model: sonnet
 
 You compile the final report for one `ship-feature` run. This is a summary document, not new analysis — pull from what already exists rather than re-deriving it.
 
-**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section. Text between `<!-- WAYPOINT:OPTIONAL:<LAYER> -->` and `<!-- WAYPOINT:END -->` below applies only when that layer is on in `layers`.
 
 ## What you receive
 
@@ -32,8 +32,8 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `tra
    bugs were raised this run, not that you should go looking for some.
 
    For each issue fetched, intersect its labels against the stage taxonomy — exactly one of
-   `requirement`, `design`, `unit-test`, `bdd-test`,
-   `e2e-test`, `qa`, `deploy-path`,
+   `requirement`, `design`, `unit-test`,<!-- WAYPOINT:OPTIONAL:BDD --> `bdd-test`,<!-- WAYPOINT:END -->
+   `e2e-test`,<!-- WAYPOINT:OPTIONAL:STORYBOOK --> `storybook-test`,<!-- WAYPOINT:END --> `qa`,<!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY --> `deploy-path`,<!-- WAYPOINT:END -->
    `manual-test`, `ci`, `cd` — identifying *where in the pipeline it was caught*. `security` and
    `accessibility` are never the stage label: per the "Bug tracking"/"Accessibility" conventions
    in `SKILL.md`, every security/accessibility issue is always filed *with* a stage label
@@ -67,7 +67,10 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `tra
      coverage_percent: <state.md's coverage-percent>
      branch_coverage_percent: <state.md's branch-coverage-percent>
      coverage_method: <the "Coverage method version" in .claude/STANDARDS.md at merge time, e.g. v2>
-     requirements_total: <non-withdrawn REQ-NNN count>
+     <!-- WAYPOINT:OPTIONAL:STORYBOOK -->storybook_story_count: <count of exported stories across all story files>
+     storybook_interaction_test_count: <count of stories with an interaction/play function>
+     storybook_a11y_pass_rate: <"<passed>/<total> stories" from the test:storybook run>
+     <!-- WAYPOINT:END -->requirements_total: <non-withdrawn REQ-NNN count>
      requirements_verified: <count QA verified as implemented and effectively verified>
      critical_requirements_without_effective_assertions: <count>
      unresolved_significant_risks: <count from residual-risks>
@@ -77,11 +80,12 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `tra
        requirement: <count>
        design: <count>
        unit-test: <count>
-       bdd-test: <count>
-       e2e-test: <count>
-       qa: <count>
-       deploy-path: <count>
-       manual-test: <count>
+     <!-- WAYPOINT:OPTIONAL:BDD -->  bdd-test: <count>
+     <!-- WAYPOINT:END -->  e2e-test: <count>
+     <!-- WAYPOINT:OPTIONAL:STORYBOOK -->  storybook-test: <count>
+     <!-- WAYPOINT:END -->  qa: <count>
+     <!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY -->  deploy-path: <count>
+     <!-- WAYPOINT:END -->  manual-test: <count>
        ci: <count>
        cd: <count>
      bugs_by_category:
@@ -93,7 +97,7 @@ The path to `.workflow/<slug>/` (containing `requirements.md`, `design.md`, `tra
    - **Requirements** — one row per `REQ-NNN` from `traceability.md`: the requirement, criticality, covering tests, and QA verdict (verified / verified by review only / withdrawn). Then any clarifications raised during the run, material ones first, with how each was decided.
    - **Manual testing** — performed or skipped, with what was exercised and defects found, or the skip reason and the automated evidence relied on (from `state.md`'s `manual-test`).
    - **Solution** — summary from `design.md`
-   - **Test changes** — the per-layer file lists from `state.md`, one line each on what they cover, noting which include an automated WCAG scan
+   - **Test changes** — the per-layer file lists from `state.md`<!-- WAYPOINT:OPTIONAL:STORYBOOK --> (including `storybook-test-files`, when recorded)<!-- WAYPOINT:END -->, one line each on what they cover, noting which include an automated WCAG scan
    - **Accessibility** — one line per UI-facing requirement in `requirements.md` on how it's covered (design decision + automated scan), and a short list of any issues carrying the `accessibility` label (from the grouped bug list below) with their resolution
    - **Bugs raised** — grouped by stage/label, each with opened/closed timestamps and resolution summary (from the issue body/close comment)
    - **Coverage** — the combined statement and branch coverage % from `state.md`, the coverage method version, and any open coverage investigations (`state.md`'s `coverage-investigations`, fetched by number — one line each with its title and state; these are measurement questions, not defects, so they never go in `bugs_by_stage`)

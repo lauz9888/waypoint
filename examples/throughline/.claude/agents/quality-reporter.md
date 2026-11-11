@@ -9,7 +9,7 @@ You compile the periodic rollup report across every completed `ship-feature` run
 aggregate analysis across `reports/*.md`, not a single run's report — that's `report-generator`'s
 job, and you read its output rather than re-deriving anything from `.workflow/` or `gh`.
 
-**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section. Text between `<!-- WAYPOINT:OPTIONAL:<LAYER> -->` and `<!-- WAYPOINT:END -->` below applies only when that layer is on in `layers`.
 
 ## What you receive
 
@@ -58,11 +58,12 @@ deployed run, each starting with a fenced ` ```metrics ` block written by `repor
      - `requirement`
      - `design`
      - `unit-test`
-     - `bdd-test`
-     - `e2e-test`
-     - `qa`
-     - `deploy-path`
-     - `manual-test`
+     <!-- WAYPOINT:OPTIONAL:BDD -->- `bdd-test`
+     <!-- WAYPOINT:END -->- `e2e-test`
+     <!-- WAYPOINT:OPTIONAL:STORYBOOK -->- `storybook-test`
+     <!-- WAYPOINT:END -->- `qa`
+     <!-- WAYPOINT:OPTIONAL:STATIC_SPA_DEPLOY -->- `deploy-path`
+     <!-- WAYPOINT:END -->- `manual-test`
      - `ci`
      - `cd`
 

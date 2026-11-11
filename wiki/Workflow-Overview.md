@@ -162,8 +162,9 @@ Not every project needs every layer. Three are toggled per adopting project (see
   coverage counts toward the combined coverage gate. Only worth it for a project with a UI
   component library.
 
-Turning a layer off removes its steps and agent(s) entirely from the generated pipeline rather
-than leaving inert scaffolding behind.
+Layers are switched on or off in the project's `.waypoint/config.json`. The pipeline files are the
+same either way: a layer's steps and instructions are marked in them and skipped while the layer is
+off, so turning one on later is a one-line config change rather than a reinstall.
 
 ### What's fixed, not configurable
 
@@ -262,24 +263,22 @@ templates contain nothing specific to any one project. `waypoint-init` inspects 
 writes everything specific to it into *your* `.waypoint/` directory: `config.json` (name, package
 manager, enabled layers, thresholds, WCAG tags, report cadence) and `stack.md` (real framework
 names, file locations, run commands and accessibility-scan patterns per layer). It then copies the
-templates into your `.claude/` with only the optional layers resolved; the agents read `.waypoint/`
-while they run. From then on, your project's copy is yours — edit it freely, it has no ongoing link
-back to this repository. See the [User Guide](User-Guide) to actually do this.
+templates into your `.claude/` unchanged; the agents read `.waypoint/` while they run, including
+which optional layers to apply. From then on, your project's copy is yours — edit it freely, it has
+no ongoing link back to this repository. See the [User Guide](User-Guide) to actually do this.
 
 Step numbers are fixed IDs: every Waypoint project uses the same number for the same step, and
-generation never renumbers them. A project without an optional layer just has a gap where that
-layer's steps would be (no Steps 6 and 10 without BDD, no Step 13 without the path-prefixed deploy
-layer).
+they're never renumbered. A run without an optional layer skips that layer's steps (Steps 6 and 10
+without BDD, Step 13 without the path-prefixed deploy layer, Step 11a without Storybook).
 
-The mechanical part of that generation — optional-layer resolution, the step-number rules, and
-the shape of `.waypoint/config.json` and `stack.md` — is checked in CI
-(`scripts/run-fixture-tests.js`, `.github/workflows/validate-templates.yml` in this repo) against
-four synthetic pipeline variants plus `examples/throughline` itself. A template edit that breaks a
-generated pipeline's internal consistency fails a build instead of only surfacing the next time
-someone runs `waypoint-init` for real: a dangling `Step N` reference, a step whose number and title
-don't match the template's, leftover template syntax, the wrong agent-file set for a layer
-combination, an unbalanced/unknown `WAYPOINT:OPTIONAL` block, or a missing or invalid config field
-or stack section. Two things it deliberately does *not* check: whether the prose `waypoint-init`
+The templates are checked in CI (`scripts/run-fixture-tests.js`,
+`.github/workflows/validate-templates.yml` in this repo) as they are and as an agent reads them
+under all eight combinations of optional layers, along with the `.waypoint/` templates and
+`examples/throughline`'s real `.waypoint/`. A template edit that breaks the pipeline's internal
+consistency fails a build instead of only surfacing in someone's real run: a `Step N` reference to
+a step that's skipped or doesn't exist, layer-only text (like `test:bdd`) outside its layer's block,
+leftover template syntax, an unbalanced/unknown `WAYPOINT:OPTIONAL` block, an agent description
+naming the wrong step, or a missing or invalid config field or stack section. Two things it deliberately does *not* check: whether the prose `waypoint-init`
 writes into a real `stack.md` is *good* (that still needs a human/LLM reading it), and whether a
 template author wrote the step number they meant — a mention of Step 12 where Step 15 was intended still passes, because Step 12 exists. See
 `scripts/README.md` for the full breakdown if you're extending the templates.

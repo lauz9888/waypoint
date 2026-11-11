@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * Deterministic, mechanical subset of what waypoint-init does to a template file: optional-layer
- * resolution and generator-comment stripping, plus the step-ID parsing the validator uses. The
- * project-specific prose waypoint-init writes into .waypoint/stack.md isn't modelled here. See
- * scripts/README.md for what that does and doesn't prove.
+ * Pure string helpers for checking Waypoint's templates: parsing the `WAYPOINT:OPTIONAL` layer
+ * blocks the agents apply at run time, resolving them the way an agent reads a file for a given
+ * set of layers, and the step-ID parsing the validator uses. See scripts/README.md for what the
+ * checks built on these do and don't prove.
  */
 
 const OPTIONAL_BLOCK_RE = /<!-- WAYPOINT:OPTIONAL:(\w+) -->([\s\S]*?)<!-- WAYPOINT:END -->/g;
@@ -13,10 +13,16 @@ const OPTIONAL_BLOCK_RE = /<!-- WAYPOINT:OPTIONAL:(\w+) -->([\s\S]*?)<!-- WAYPOI
 // pairing papers over a mistake by just matching the nearest END regardless of whether it was
 // the *intended* one.
 const OPTIONAL_TOKEN_RE = /<!-- WAYPOINT:(OPTIONAL:(\w+)|END) -->/g;
+// A marker wrapped in backticks on both sides is a quotation of the syntax (e.g. the rule text
+// that explains it, `<!-- WAYPOINT:END -->`), not a marker.
+const QUOTED_MARKER_RE = /`<!-- WAYPOINT:[^`\n]*?-->`/g;
+
+/** `text` with every quoted marker blanked out, so marker parsing ignores it. Same length, so
+ * offsets into the result are offsets into `text`. */
+function maskQuotedMarkers(text) {
+  return text.replace(QUOTED_MARKER_RE, (q) => ' '.repeat(q.length));
+}
 const KNOWN_LAYERS = ['BDD', 'STATIC_SPA_DEPLOY', 'STORYBOOK'];
-const GENERATOR_NOTE_RE = /<!-- Generator note:[\s\S]*?-->\n?/g;
-const GENERATOR_RE = /<!-- Generator:[\s\S]*?-->\n?/g;
-const STANDALONE_WAYPOINT_NOTE_RE = /<!-- WAYPOINT: [\s\S]*?-->\n?/g;
 
 // Matches a step mention: "Step N", "Step Na", a range "Steps N-M" / "Steps N–M" (hyphen or en
 // dash), or a slash list "Step 5/6/7" — anywhere in the text, including inside "## Step N — ..."
@@ -28,10 +34,9 @@ const STEP_REF_RE = /\bSteps?\s+(\d+a?)((?:\s*[–/-]\s*\d+a?)*)/g;
 const STEP_HEADER_LINE_RE = /^## Steps?\s+(\d+a?)(?:\s*[–-]\s*(\d+a?))?\s+—\s+(.+?)\s*$/;
 
 /** Throws a descriptive error unless every `WAYPOINT:OPTIONAL:<layer>` start has exactly one
- * matching `WAYPOINT:END`, blocks aren't nested, and every layer name is known — turning what
- * was previously just an authoring convention (documented in TEMPLATE_CONVENTIONS.md, not
- * enforced) into something generation actually fails on if violated. */
-function validateOptionalBlocks(text, filename, knownLayers = KNOWN_LAYERS) {
+ * matching `WAYPOINT:END`, blocks aren't nested, and every layer name is known. */
+function validateOptionalBlocks(rawText, filename, knownLayers = KNOWN_LAYERS) {
+  const text = maskQuotedMarkers(rawText);
   const stack = [];
   let m;
   OPTIONAL_TOKEN_RE.lastIndex = 0;
@@ -66,29 +71,52 @@ function validateOptionalBlocks(text, filename, knownLayers = KNOWN_LAYERS) {
   }
 }
 
+/** `text` as an agent reads it for the given layers: an enabled layer's block keeps its content
+ * without the markers, a disabled layer's block disappears. */
 function resolveOptionalBlocks(text, enabledLayers) {
-  return text.replace(OPTIONAL_BLOCK_RE, (whole, layer, inner) =>
-    enabledLayers[layer] ? inner : ''
-  );
+  const masked = maskQuotedMarkers(text);
+  let out = '';
+  let last = 0;
+  let m;
+  OPTIONAL_BLOCK_RE.lastIndex = 0;
+  while ((m = OPTIONAL_BLOCK_RE.exec(masked))) {
+    const innerStart = m.index + m[0].indexOf('-->') + 3;
+    const innerEnd = innerStart + m[2].length;
+    out += text.slice(last, m.index) + (enabledLayers[m[1]] ? text.slice(innerStart, innerEnd) : '');
+    last = m.index + m[0].length;
+  }
+  return out + text.slice(last);
 }
 
-function stripGeneratorComments(text) {
-  return text
-    .replace(GENERATOR_NOTE_RE, '')
-    .replace(GENERATOR_RE, '')
-    .replace(STANDALONE_WAYPOINT_NOTE_RE, '');
+/** The layer whose block encloses each character offset of `text`, as a lookup function
+ * (offset -> layer name or null). Assumes the blocks are well-formed (validateOptionalBlocks). */
+function layerLookup(rawText) {
+  const text = maskQuotedMarkers(rawText);
+  const spans = [];
+  let open = null;
+  let m;
+  OPTIONAL_TOKEN_RE.lastIndex = 0;
+  while ((m = OPTIONAL_TOKEN_RE.exec(text))) {
+    if (m[2] !== undefined) open = { layer: m[2], start: m.index };
+    else if (open) {
+      spans.push({ ...open, end: m.index });
+      open = null;
+    }
+  }
+  return (offset) => {
+    const span = spans.find((s) => offset > s.start && offset < s.end);
+    return span ? span.layer : null;
+  };
 }
 
 /** Every "## Step(s) N — Title" header in `text`, in document order, as
  * `{ label, ids, title, layer }` — `label` as written ("12", "21a", "16–17"), `ids` every step ID
  * it covers (both ends of a range), and `layer` the WAYPOINT:OPTIONAL layer the header sits inside
- * in a template (null for a step every project has, and always null in a generated file). Step
- * numbers are fixed IDs, never renumbered, so a template's headers are the catalogue every
- * generated SKILL.md is checked against. */
+ * (null for a step every project runs). Step numbers are fixed IDs, never renumbered. */
 function parseStepHeaders(text) {
   const headers = [];
   let layer = null;
-  for (const line of text.split('\n')) {
+  for (const line of maskQuotedMarkers(text).split('\n')) {
     const hm = line.match(STEP_HEADER_LINE_RE);
     if (hm) {
       const ids = hm[2] ? [hm[1], hm[2]] : [hm[1]];
@@ -106,7 +134,7 @@ function parseStepHeaders(text) {
 
 /** Splits one STEP_REF_RE match into `{ ids, multi }`: a range ("9–11") yields its two ends, a
  * slash list ("5/6/7") every member, and `multi` says whether the mention names more than one step
- * (in which case it means "whichever of these exist in this project"). */
+ * (in which case it means "whichever of these this project runs"). */
 function parseStepRef(first, rest) {
   if (!rest) return { ids: [first], multi: false };
   if (rest.includes('/')) {
@@ -134,7 +162,7 @@ function findAgentSpawnStep(skillText, agentName) {
 module.exports = {
   validateOptionalBlocks,
   resolveOptionalBlocks,
-  stripGeneratorComments,
+  layerLookup,
   KNOWN_LAYERS,
   parseStepHeaders,
   parseStepRef,

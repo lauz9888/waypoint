@@ -86,8 +86,8 @@ You don't need to have answers ready in advance — if something's detectable fr
 |---|---|
 | `.waypoint/config.json` | Your project's settings: name and one-line summary, package manager, runtime version, which optional layers are on, coverage thresholds, WCAG tag scope, and quality-report cadence — the one place to change them later. |
 | `.waypoint/stack.md` | Your stack facts in prose: each test layer's framework, file locations, run command and accessibility-scanning pattern, plus how coverage is measured per layer. |
-| `.claude/agents/*.md` | The subagent roster (11 files, or 12 if you enabled BDD). They read your stack details from `.waypoint/` while they run, so they're the same files every Waypoint project with your layers gets. |
-| `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator, with the steps of any layer you didn't enable removed. Step numbers never change, so a gap (e.g. no Step 6 without BDD) is expected. |
+| `.claude/agents/*.md` | The subagent roster (12 files; `bdd-test-author` is only used if you enabled BDD). They read your settings and stack details from `.waypoint/` while they run, so they're the same files every Waypoint project gets. |
+| `.claude/skills/ship-feature/SKILL.md` | The pipeline orchestrator. Steps belonging to a layer you didn't enable are marked in the file and skipped when it runs; step numbers never change, so e.g. a run without BDD goes from Step 5 to Step 7. |
 | `.claude/skills/quality-report/SKILL.md` | On-demand trigger for the periodic quality/velocity rollup (see below) — `/quality-report`, no arguments. |
 | `.claude/STANDARDS.md` | The rules every agent shares: the trust boundary, how coverage is measured and validated, requirements traceability, and the security checklist. Project values it relies on come from `.waypoint/config.json`. |
 | `docs/adr/README.md` | The convention for Architecture Decision Records the solution-designer agent uses when a change warrants one. |
@@ -216,9 +216,10 @@ Waypoint. Common tweaks:
   change (CI's `coverage-merge` job mirrors the thresholds as env vars — update those too).
 - **Change a stack detail or your coverage instrumentation plan** (switched test runner, new
   accessibility tool, moved spec folder) — edit the matching section of `.waypoint/stack.md`.
-- **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — easiest done by
-  re-running `/waypoint-init` (see below) rather than hand-copying that layer's steps, agents and
-  labels into your files.
+- **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — flip it in
+  `.waypoint/config.json`'s `layers`, and add (or delete) its section in `.waypoint/stack.md`. The
+  pipeline picks it up on the next run; nothing in `.claude/` changes. Re-running `/waypoint-init`
+  (see below) does the same and writes the new `stack.md` section for you.
 - **Adjust an individual agent's behavior** — e.g. tighten what `qa-reviewer` checks, or change
   `bug-fixer`'s scope rules — just edit that agent's `.claude/agents/*.md` file directly.
 

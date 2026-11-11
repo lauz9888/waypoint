@@ -26,11 +26,11 @@ it in a project:
 4. Review and commit the generated files, then run `/ship-feature <change request>` for real.
 
 The `.claude/` files hold nothing specific to your project — the agents read `.waypoint/` while
-they run — so changing a threshold or a stack detail means editing `.waypoint/`, and two projects
-with the same optional layers get identical `.claude/` files.
+they run, including which optional layers are on — so changing a threshold, a stack detail or a
+layer means editing `.waypoint/`, and every Waypoint project gets identical `.claude/` files.
 
-`examples/throughline/` is a worked example: a real project's `.waypoint/` and the `.claude/`
-generated for it — read it alongside `TEMPLATE_CONVENTIONS.md` if you're extending the templates
+`examples/throughline/` is a worked example: a real project's `.waypoint/` alongside its installed
+copy of `.claude/` — read it alongside `TEMPLATE_CONVENTIONS.md` if you're extending the templates
 rather than just adopting them.
 
 ## Status & limitations
@@ -42,11 +42,11 @@ rather than just adopting them.
 - **Assumes Claude Code** with skills, subagents (the `Agent` tool), and `AskUserQuestion`
   available — this isn't a generic prompt-engineering template, it's built around those specific
   primitives.
-- **Generated pipelines are mechanically validated.** `scripts/run-fixture-tests.js`, run in CI
-  (`.github/workflows/validate-templates.yml`), regenerates `examples/throughline` and four
-  synthetic layer combinations on every push, checks them for drift from the templates, and
-  checks every `.waypoint/` file involved — see `scripts/README.md` for exactly what "validated"
-  does and doesn't mean here (structural correctness, not prose quality).
+- **The templates are mechanically validated.** `scripts/run-fixture-tests.js`, run in CI
+  (`.github/workflows/validate-templates.yml`), checks them on every push as they are and for all
+  eight combinations of optional layers, checks the `.waypoint/` templates and throughline's real
+  `.waypoint/`, and checks throughline's `.claude/` is an exact copy — see `scripts/README.md` for
+  exactly what "validated" does and doesn't mean here (structural correctness, not prose quality).
 - **Known limitations:** GitHub-only (VCS and issue tracker, via the `gh` CLI — see
   `TEMPLATE_CONVENTIONS.md`'s "Not templatized" section); assumes the npm-style script-name
   contract (`build`, `test:unit`, etc.), so non-Node projects aren't supported yet; every retry

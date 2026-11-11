@@ -9,8 +9,8 @@ argument). Read `TEMPLATE_CONVENTIONS.md` at the template source root before doi
 it defines the `.waypoint/` config fields and the template markers referenced below.
 
 Like `requirements-analyst`, ground every decision in the target repo's actual state before
-asking the user anything — inspecting the codebase is cheap, a wrong assumption baked into a
-generated agent file is not.
+asking the user anything — inspecting the codebase is cheap, a wrong assumption baked into
+`.waypoint/` is not.
 
 ## Step 1 — Resolve the template source
 
@@ -62,7 +62,7 @@ Read what already tells you the stack, rather than asking for everything:
 ## Step 4 — Confirm with the user
 
 Show what you detected and get explicit confirmation/correction rather than assuming silently —
-wrong values here propagate into every generated agent file.
+wrong values here reach every agent that reads `.waypoint/`.
 
 1. `AskUserQuestion` (single call, these are genuine either/or decisions):
    - **Package manager** — your detected value as the recommended option, plus the other two.
@@ -105,7 +105,7 @@ wrong values here propagate into every generated agent file.
    the project's existing merge script or docs already demonstrate one with concrete evidence —
    an exclusion someone assumed is harmless isn't evidence. Flag every trap Step 3.7 found explicitly; if `test:coverage:merge` already
    exists and does something the plan forbids, say the first `/ship-feature` should be fixing it
-   (Step 6.4 will measure it).
+   (Step 6.3 will measure it).
 4. Don't ask about GitHub-as-VCS or the npm-style script-name contract — both are fixed for this
    version of Waypoint (see `TEMPLATE_CONVENTIONS.md`'s "Not templatized" section); note this to
    the user rather than presenting it as a choice.
@@ -113,7 +113,8 @@ wrong values here propagate into every generated agent file.
 ## Step 5 — Generate
 
 Everything project-specific goes into `.waypoint/`; the `.claude/` files are copied from the
-template source with only the optional layers resolved, and carry no project values of their own.
+template source unchanged. They're the same in every Waypoint project — the agents read
+`.waypoint/` while they run, including which optional layers are on.
 
 1. **`.waypoint/config.json`**: write it in the shape of
    `<template-source>/templates/waypoint/config.json`, with every field set to the value confirmed
@@ -131,20 +132,12 @@ template source with only the optional layers resolved, and carry no project val
    there establishes the pattern. Write the `coverage` section from the instrumentation plan and
    exclusions confirmed in Step 4.3. Then delete the generator comments.
 3. **`.claude/STANDARDS.md`**, **`.claude/skills/ship-feature/SKILL.md`**,
-   **`.claude/skills/quality-report/SKILL.md`**, and every **`.claude/agents/*.md`** (including
-   `quality-reporter.md`) except `bdd-test-author.md` if the BDD layer is off: copy the template,
-   changing nothing except:
-   - Resolve every `<!-- WAYPOINT:OPTIONAL:<layer> -->...<!-- WAYPOINT:END -->` block: if the
-     project has that layer on, keep the content and delete just the two marker lines; if off,
-     delete the entire block including its content.
-   - Delete any `<!-- Generator: ... -->` or `<!-- Generator note: ... -->` HTML comments — they're
-     instructions to you, not content for the generated file.
-   - **Never renumber steps.** Step numbers are fixed IDs shared by every Waypoint project (see
-     `TEMPLATE_CONVENTIONS.md`'s "Step numbers" section). Removing a disabled layer's step — Steps
-     6 and 10 if BDD is off, Step 13 if `STATIC_SPA_DEPLOY` is off, Step 11a if `STORYBOOK` is off
-     — leaves a gap in the sequence, by design. Every remaining `## Step N` header and every
-     `Step N` mention, in `SKILL.md` and in every other generated file (agent frontmatter such as
-     "Invoked... at Step 12", `STANDARDS.md`), stays exactly as the template writes it.
+   **`.claude/skills/quality-report/SKILL.md`**, and every **`.claude/agents/*.md`** (all twelve,
+   `bdd-test-author.md` included whatever the BDD layer's setting): copy each one byte for byte.
+   Don't resolve the `<!-- WAYPOINT:OPTIONAL:<layer> -->...<!-- WAYPOINT:END -->` blocks or
+   renumber anything — the agents apply the blocks at run time from `layers` (see
+   `TEMPLATE_CONVENTIONS.md`'s "Optional layers" section), and an identical copy is what lets a
+   later Waypoint update replace these files without touching the project's own settings.
 4. **`docs/adr/README.md`**: copy verbatim from the template source.
 5. **`.gitignore`**: if the target project has one, ensure `.workflow/` is present (append if
    missing, don't touch anything else in the file). If there's no `.gitignore` at all, create one
@@ -154,22 +147,13 @@ template source with only the optional layers resolved, and carry no project val
 
 Before reporting success:
 
-1. `Grep` every file you just wrote for `{{`, `WAYPOINT:` and `<!-- Generator` — any match means
-   template syntax survived generation. Check `.waypoint/config.json` parses as JSON and has every
-   field the template has, and that `.waypoint/stack.md` has a filled-in section for
-   `test-frameworks`, `unit-test`, `e2e-test` and `coverage`, plus `bdd-test`/`storybook-test`
-   exactly when those layers are on.
-2. List every `## Step N` header (including `## Step <N>a`) in the generated `SKILL.md` and
-   compare it with the template's: each header must appear in the template with the same number
-   and the same title, and the only template headers missing must be the steps of disabled
-   layers (see Step 5). A different number or title means something was renumbered — undo it.
-3. `Grep` every generated file — `SKILL.md`, `.claude/agents/*.md`,
-   `.claude/skills/quality-report/SKILL.md`, `STANDARDS.md` — for `Steps? [0-9]+[a-z]?`. A mention
-   of a single step must name a header that exists in the generated `SKILL.md`; a mention of
-   several steps (a range like "Steps 9–11" or a list like "Step 5/6/7") may include a disabled
-   layer's step, since it means whichever of them exist.
+1. Check `.waypoint/config.json` parses as JSON and has every field the template has, and that
+   `.waypoint/stack.md` has a filled-in section for `test-frameworks`, `unit-test`, `e2e-test` and
+   `coverage`, plus `bdd-test`/`storybook-test` exactly when those layers are on, with no
+   `<!-- Generator` comment left in it.
+2. Diff every file you copied in Step 5.3–5.4 against its template — each must be identical.
 
-4. **Coverage baseline**, only if `test:coverage:merge` already exists: run it once (it may take
+3. **Coverage baseline**, only if `test:coverage:merge` already exists: run it once (it may take
    a while — run it in the background) and apply `STANDARDS.md`'s "Validity checks" and
    "Investigation signals" to each layer's `coverage/<layer>/coverage-final.json` and the output,
    the same way `qa-reviewer` does — including enumerating the source root on disk yourself and
@@ -190,7 +174,7 @@ dangling/incorrect step reference still in it.
 Tell the user what was created (file list — including `quality-reporter.md` and
 `quality-report/SKILL.md`), which optional layers are on/off and why, the confirmed
 `releaseReportCadence`, the confirmed coverage thresholds and instrumentation plan, the
-Step 6.4 coverage baseline (if run), and that `/ship-feature <change request>` is now ready to use (and
+Step 6.3 coverage baseline (if run), and that `/ship-feature <change request>` is now ready to use (and
 `/quality-report` for an on-demand rollup any time, without waiting for the cadence). Suggest
 committing the generated `.waypoint/`, `.claude/` and `docs/adr/` files as a first commit before running the
 pipeline for real. If the baseline failed any validity check, or `test:coverage:merge`

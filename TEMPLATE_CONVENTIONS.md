@@ -1,12 +1,12 @@
 # Template conventions
 
-The files under `.claude/` in this repo are **templates**, not a working pipeline. They contain
-nothing specific to one project: everything that differs between projects lives in the adopting
-project's `.waypoint/` directory, which the agents read while they run. `waypoint-init` writes
-`.waypoint/` from what it detects and confirms, and copies `.claude/` with only the optional
-layers resolved — so any two projects with the same layers have identical `.claude/` files.
+The files under `.claude/` in this repo are the pipeline's **templates**. They contain nothing
+specific to one project: everything that differs between projects — including which optional
+layers are on — lives in the adopting project's `.waypoint/` directory, which the agents read while
+they run. `waypoint-init` writes `.waypoint/` from what it detects and confirms, and copies
+`.claude/` byte for byte, so every Waypoint project has identical `.claude/` files.
 `examples/throughline/` is a worked example: the project this pipeline was extracted from, with
-its real `.waypoint/` and the `.claude/` generated for it.
+its real `.waypoint/` and the installed `.claude/` copy.
 
 ## `.waypoint/config.json`
 
@@ -49,9 +49,12 @@ exact `axe()` call pattern).
 <!-- WAYPOINT:END -->
 ```
 
-Everything between the markers (including the markers) applies only if the adopting project
-opted into `<layer>` during setup; otherwise the generator deletes the whole block. Layers in
-use:
+Everything between the markers applies only when the adopting project's `.waypoint/config.json`
+has `layers.<layer>` set to `true`. The markers stay in every installed copy: the agents apply them
+at run time, reading a disabled layer's block as if it weren't there (the rule is stated in
+`STANDARDS.md`'s "Project configuration" section, in `SKILL.md`'s conventions, and in each
+agent's configuration line). Blocks can sit mid-sentence; they can't nest. A marker quoted in
+backticks (`` `<!-- WAYPOINT:END -->` ``) is text, not a marker. Layers in use:
 
 - `BDD` — the Cucumber/Gherkin-style behavioral layer (Steps 6/10 in `SKILL.md`, the
   `bdd-test-author` agent, and every `test:bdd`/BDD mention elsewhere). Some teams run unit + e2e
@@ -67,26 +70,29 @@ use:
   Storybook-specific metrics in `report-generator`'s metrics block. Only meaningful for projects
   with a UI component library.
 
-`bdd-test-author.md` is entirely conditional on the `BDD` layer — if a project skips it, delete
-the file outright rather than leaving an unused agent behind, and drop Steps 6/10 from `SKILL.md`.
+`bdd-test-author.md` belongs entirely to the `BDD` layer, so it isn't wrapped in a block: every
+project gets the file, and `SKILL.md` only spawns it from inside BDD blocks.
+
+Text that only makes sense with its layer on — a `test:bdd` or `test:storybook` command, the
+`deploy-path` label, a mention of `bdd-test-author` — must sit inside that layer's block;
+`scripts/validate-templates.js` checks this.
 
 ## Step numbers
 
 Step numbers in `SKILL.md` are fixed IDs: every Waypoint project uses the same number for the same
-step, and generation never renumbers them. Turning a layer off deletes its steps and leaves a gap:
+step, and they're never renumbered. A layer's steps sit inside its block and are skipped when it's
+off:
 
-| Layer               | Steps removed when off |
+| Layer               | Steps skipped when off |
 | ------------------- | ---------------------- |
 | `BDD`               | 6, 10                  |
 | `STORYBOOK`         | 11a                    |
 | `STATIC_SPA_DEPLOY` | 13                     |
 
-Every other header and every `Step N` mention, in any file, keeps its number. A mention of several
-steps (a range like "Steps 9–11" or a list like "Step 5/6/7") means whichever of them exist in the
-project, so it can safely name a disabled layer's step; a mention of a single step must name one
-that every project with that text has. A step's number and title together are its identity —
-`scripts/validate-templates.js` checks every generated header against the template's, so a step
-can't silently come to mean something else.
+A mention of several steps (a range like "Steps 9–11" or a list like "Step 5/6/7") means whichever
+of them the project runs, so it can name a layer's step from outside that layer's block; a mention
+of a single layer step must sit inside the same layer's block. `scripts/validate-templates.js`
+checks every mention against all eight layer combinations.
 
 When adding a step, give it a new ID rather than shifting existing ones: an `a` suffix on the step
 it follows (as Steps 11a and 21a do) keeps every existing reference valid. Fixed IDs also keep

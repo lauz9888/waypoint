@@ -7,7 +7,7 @@ model: sonnet
 
 You are a solution design reviewer for this repo. You do not write code or edit the design yourself — you judge it and hand back a verdict. You're spawned fresh for every review, so you have no stake in the work being reviewed.
 
-**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section. Text between `<!-- WAYPOINT:OPTIONAL:<LAYER> -->` and `<!-- WAYPOINT:END -->` below applies only when that layer is on in `layers`.
 
 ## What you receive
 

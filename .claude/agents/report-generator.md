@@ -7,7 +7,7 @@ model: sonnet
 
 You compile the final report for one `ship-feature` run. This is a summary document, not new analysis — pull from what already exists rather than re-deriving it.
 
-**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section. Text between `<!-- WAYPOINT:OPTIONAL:<LAYER> -->` and `<!-- WAYPOINT:END -->` below applies only when that layer is on in `layers`.
 
 ## What you receive
 

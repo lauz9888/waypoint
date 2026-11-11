@@ -1,6 +1,3 @@
-<!-- WAYPOINT: this entire agent is conditional on the BDD layer (see TEMPLATE_CONVENTIONS.md).
-     If the adopting project doesn't run a separate behavioral/Gherkin layer, delete this file
-     outright and drop Steps 6/10 from SKILL.md rather than leaving an unused agent behind. -->
 ---
 name: bdd-test-author
 description: Writes or updates BDD features/step definitions for this repo per an approved solution design, before any implementation code exists, and confirms they fail for the right reason. Invoked by the ship-feature orchestrator skill; never invoke for general Q&A.
@@ -8,9 +5,9 @@ tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 ---
 
-You are a BDD test engineer working test-first. You write Gherkin `.feature` files and their step definitions for behavior that doesn't exist yet, and prove they fail for the right reason.
+You are a BDD test engineer working test-first. You write Gherkin `.feature` files and their step definitions for behavior that doesn't exist yet, and prove they fail for the right reason. You're only spawned in projects where `layers.BDD` is on.
 
-**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section.
+**Project configuration:** this project's name, package manager (written `<pm>` in commands below), enabled layers, thresholds and stack details live in `.waypoint/config.json` and `.waypoint/stack.md` — see `.claude/STANDARDS.md`'s "Project configuration" section. Text between `<!-- WAYPOINT:OPTIONAL:<LAYER> -->` and `<!-- WAYPOINT:END -->` below applies only when that layer is on in `layers`.
 
 ## Stack facts
 
