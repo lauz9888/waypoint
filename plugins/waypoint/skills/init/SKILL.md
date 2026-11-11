@@ -67,8 +67,11 @@ Read what already tells you the stack, rather than asking for everything:
    `istanbul-lib-*`); `coverage` config in the unit runner's config (provider, `include`/`exclude`,
    reporters, output dir); how the e2e layer collects coverage, if at all (Playwright
    `page.coverage`, `window.__coverage__`, a `COVERAGE` env flag in the build config,
-   `build.sourcemap`); and whether a `test:coverage:merge` script (and a merge script behind it)
-   already exists. Note any known trap you find — V8/`page.coverage` coverage converted over a
+   `build.sourcemap`); whether a `test:coverage:merge` script (and a merge script behind it)
+   already exists; and whether `.github/workflows/ci.yml`'s `coverage-merge` job hard-codes its
+   thresholds (`COVERAGE_THRESHOLD`, `BRANCH_COVERAGE_THRESHOLD`, or a literal percentage) instead
+   of reading them from `.waypoint/config.json` — the "Combined coverage threshold" section of
+   `STANDARDS.md` says why that's a trap. Note any known trap you find — V8/`page.coverage` coverage converted over a
    minified production bundle, providers of different kinds whose maps are merged raw with
    `CoverageMap.merge`, instrumentation that would also apply to the normal production build — so
    Step 3 can raise it.
@@ -220,8 +223,10 @@ reference Step 4.6 found, recommending a follow-up commit that repoints them —
 `/waypoint:ship-feature <change request>` is now ready to use (and `/waypoint:quality-report` for an
 on-demand rollup any time, without waiting for the cadence). Suggest committing `.waypoint/`,
 `docs/adr/`, `.gitignore` and any `.claude/` changes as a first commit before running the pipeline
-for real. If the baseline failed any validity check, or `test:coverage:merge` doesn't exist yet,
-recommend that the first `/waypoint:ship-feature` run be the measurement change itself (e.g.
+for real. If Step 2.7 found hard-coded thresholds in `ci.yml`, say where, and recommend a follow-up
+commit replacing them with the `STANDARDS.md` step that reads them from `.waypoint/config.json` —
+until then, changing a threshold in `.waypoint/config.json` won't reach CI. If the baseline failed
+any validity check, or `test:coverage:merge` doesn't exist yet, recommend that the first `/waypoint:ship-feature` run be the measurement change itself (e.g.
 `/waypoint:ship-feature make test:coverage:merge meet the Waypoint standards' coverage measurement
 section`) — its requirements will carry the calibration requirements — so that every later change
 is gated on a real figure, not one that only looks real. Unresolved signals alone don't warrant

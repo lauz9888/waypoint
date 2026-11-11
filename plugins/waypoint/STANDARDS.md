@@ -71,8 +71,20 @@ layers (unit<!-- WAYPOINT:OPTIONAL:BDD --> + BDD<!-- WAYPOINT:END --> + e2e<!-- 
 `<pm> run test:coverage:merge`) must be **at least `coverage.statements`%** (statements) and
 **at least `coverage.branches`%** (branches), both from `.waypoint/config.json`, before a change
 passes `qa-reviewer`'s Step 12 gate or CI's `coverage-merge` job. `ci.yml`'s `coverage-merge` job
-mirrors both values as env vars (`COVERAGE_THRESHOLD`, `BRANCH_COVERAGE_THRESHOLD`) — update both
-places together.
+reads both values from `.waypoint/config.json` at run time, into the env vars its gating step
+checks (`COVERAGE_THRESHOLD`, `BRANCH_COVERAGE_THRESHOLD`), so `.waypoint/config.json` is the
+only place a threshold is set — never hard-code them in the workflow, where they drift from the
+agents' gate:
+
+```yaml
+- name: Read coverage thresholds from .waypoint/config.json
+  run: |
+    echo "COVERAGE_THRESHOLD=$(node -p "require('./.waypoint/config.json').coverage.statements")" >> "$GITHUB_ENV"
+    echo "BRANCH_COVERAGE_THRESHOLD=$(node -p "require('./.waypoint/config.json').coverage.branches")" >> "$GITHUB_ENV"
+```
+
+A `ci.yml` that still hard-codes either value is a finding: fix it in the change that touches
+the job, or raise it for follow-up.
 
 These thresholds are a floor, not a complete quality measure — a coverage percentage can be
 satisfied by shallow tests that execute a line without meaningfully asserting on it. Critical-path
@@ -214,8 +226,8 @@ they're what proves the new measurement is real, not just present:
    a clear message, and every investigation signal is printed when present without failing it;
    the pure logic of both has its own unit tests, so CI exercises them on every PR.
 6. The output matches the output contract above exactly, and `ci.yml`'s `coverage-merge` job
-   parses and gates both lines against the thresholds above (and fails on the script's non-zero
-   exit).
+   parses and gates both lines against the thresholds above, read from `.waypoint/config.json`
+   rather than hard-coded (and fails on the script's non-zero exit).
 7. If the figures move because measurement changed rather than tests changed, the change records
    a new coverage-method version (see the next paragraph) and an ADR explains the old and new
    numbers.

@@ -222,7 +222,9 @@ after `/reload-plugins`). Common tweaks:
 
 - **Change your coverage thresholds, WCAG scope, or quality-report cadence** — edit
   `.waypoint/config.json`. Every agent that cares reads it from there, so this is the one place to
-  change (CI's `coverage-merge` job mirrors the thresholds as env vars — update those too).
+  change. CI's `coverage-merge` job reads the thresholds from there too, as long as its workflow
+  uses the step in the plugin's `STANDARDS.md` rather than hard-coding them; `/waypoint:init`
+  flags a `ci.yml` that still hard-codes them.
 - **Change a stack detail or your coverage instrumentation plan** (switched test runner, new
   accessibility tool, moved spec folder) — edit the matching section of `.waypoint/stack.md`.
 - **Add or remove an optional layer later** (e.g. you adopted BDD after the fact) — flip it in
